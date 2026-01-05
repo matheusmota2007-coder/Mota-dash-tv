@@ -17,7 +17,6 @@
       inset: 0;
       overflow: hidden;
       background: #000;
-      touch-action: pan-y; /* ajuda no swipe horizontal no mobile */
     }
 
     iframe {
@@ -51,6 +50,23 @@
       transform-origin: left center;
       transform: scaleX(1);
     }
+
+    /* ===== Overlay nas bordas para swipe/tap (não depende do iframe) ===== */
+    .edge {
+      position: fixed;
+      top: 0;
+      height: 100vh;
+      width: 12vw;          /* ajuste: 10vw–18vw */
+      z-index: 9998;        /* abaixo do badge e da barra, acima do iframe */
+      background: rgba(255,255,255,0); /* invisível */
+      touch-action: none;   /* garante que o browser não “roube” o gesto */
+    }
+    #edgeLeft  { left: 0; }
+    #edgeRight { right: 0; }
+
+    /* opcional: se quiser “ver” as bordas pra testar, descomente
+    .edge { background: rgba(255,0,0,0.08); }
+    */
   </style>
 </head>
 <body>
@@ -60,40 +76,45 @@
     <iframe id="frame" allowfullscreen></iframe>
   </div>
 
+  <!-- bordas invisíveis pra capturar gesto -->
+  <div class="edge" id="edgeLeft"  aria-label="Anterior"></div>
+  <div class="edge" id="edgeRight" aria-label="Próximo"></div>
+
   <div class="progress-wrap">
     <div class="progress-bar" id="progress"></div>
   </div>
 
   <script>
     const URLS = [
+     
 
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=1375987279",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=181392821",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=1377967419",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=989494084",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=409465462",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=1464654695",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=1781419413",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=82066333",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=219207332",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=34100657",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=285689922",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=1817641505",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=423305502",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=1375987279",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=181392821",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=1377967419",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=989494084",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=409465462",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=1464654695",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml#gid=1781419413",
 
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=82066333",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=219207332",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=34100657",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=285689922",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=1817641505",
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pubhtml#gid=423305502",
 
 
     ];
 
     const INTERVALO_MS = 30_000;
-
-    // Se quiser “crop/zoom”
     const ZOOM = 1.00;
 
     const frame = document.getElementById("frame");
     const badge = document.getElementById("badge");
     const progress = document.getElementById("progress");
-    const stage = document.getElementById("stage");
+
+    const edgeLeft = document.getElementById("edgeLeft");
+    const edgeRight = document.getElementById("edgeRight");
 
     let i = 0;
     let startTime = 0;
@@ -111,25 +132,23 @@
     }
 
     function makeUrl(original) {
-      // Força refresh (evita cache) sem quebrar #gid
       const parts = original.split("#");
       const base = parts[0];
       const hash = parts[1] ? "#" + parts[1] : "";
 
       const url = new URL(base);
       url.searchParams.set("_ts", Date.now());
-
       return url.toString() + hash;
     }
 
     function renderBadge() {
       const status = paused ? "PAUSADO" : "AUTO";
-      badge.textContent = `Gráfico ${i + 1} / ${URLS.length} • ${status} • ← → ou swipe • P pausa`;
+      // dica de uso mobile incluída
+      badge.textContent = `Gráfico ${i + 1} / ${URLS.length} • ${status} • bordas: ← → • P pausa`;
     }
 
     function loadCurrent() {
-      const original = URLS[i];
-      frame.src = makeUrl(original);
+      frame.src = makeUrl(URLS[i]);
       applyZoom();
       renderBadge();
     }
@@ -139,29 +158,20 @@
       startTime = performance.now();
       setProgress(1);
 
-      if (!paused) {
-        rafId = requestAnimationFrame(tick);
-      } else {
-        setProgress(1);
-      }
+      if (!paused) rafId = requestAnimationFrame(tick);
+      else setProgress(1);
     }
 
     function goTo(index, { restartTimer = true } = {}) {
       const n = URLS.length;
       if (n === 0) return;
-
       i = ((index % n) + n) % n;
       loadCurrent();
       if (restartTimer) startCycle();
     }
 
-    function next({ restartTimer = true } = {}) {
-      goTo(i + 1, { restartTimer });
-    }
-
-    function prev({ restartTimer = true } = {}) {
-      goTo(i - 1, { restartTimer });
-    }
+    function next({ restartTimer = true } = {}) { goTo(i + 1, { restartTimer }); }
+    function prev({ restartTimer = true } = {}) { goTo(i - 1, { restartTimer }); }
 
     function tick(now) {
       const elapsed = now - startTime;
@@ -185,62 +195,75 @@
       if (!paused) startCycle();
     }
 
-    // Teclas: navegar
+    // Teclas (PC/TV Box)
     window.addEventListener("keydown", (e) => {
       const key = e.key;
-
       const blockKeys = ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," ","PageUp","PageDown","Home","End","Backspace"];
       if (blockKeys.includes(key)) e.preventDefault();
 
-      if (key === "ArrowRight" || key === "ArrowDown" || key === "PageDown" || key === " ") {
-        next({ restartTimer: true });
-      } else if (key === "ArrowLeft" || key === "ArrowUp" || key === "PageUp" || key === "Backspace") {
-        prev({ restartTimer: true });
-      } else if (key === "Home") {
-        goTo(0, { restartTimer: true });
-      } else if (key === "End") {
-        goTo(URLS.length - 1, { restartTimer: true });
-      } else if (key === "p" || key === "P") {
-        togglePause();
-      }
+      if (key === "ArrowRight" || key === "ArrowDown" || key === "PageDown" || key === " ") next({ restartTimer: true });
+      else if (key === "ArrowLeft" || key === "ArrowUp" || key === "PageUp" || key === "Backspace") prev({ restartTimer: true });
+      else if (key === "Home") goTo(0, { restartTimer: true });
+      else if (key === "End") goTo(URLS.length - 1, { restartTimer: true });
+      else if (key === "p" || key === "P") togglePause();
     }, { passive: false });
 
-    // ===================== SWIPE (CELULAR) =====================
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchStartTime = 0;
+    // ======= Swipe e Tap nas bordas (mobile) =======
+    function attachSwipe(el, direction) {
+      let sx = 0, sy = 0, st = 0, moved = false;
 
-    const SWIPE_MIN_X = 60;   // px
-    const SWIPE_MAX_Y = 80;   // px
-    const SWIPE_MAX_MS = 800; // ms
+      const MIN_X = 40;
+      const MAX_Y = 120;
+      const MAX_MS = 900;
 
-    stage.addEventListener("touchstart", (e) => {
-      if (!e.touches || e.touches.length !== 1) return;
-      const t = e.touches[0];
-      touchStartX = t.clientX;
-      touchStartY = t.clientY;
-      touchStartTime = Date.now();
-    }, { passive: true });
+      el.addEventListener("touchstart", (e) => {
+        if (!e.touches || e.touches.length !== 1) return;
+        const t = e.touches[0];
+        sx = t.clientX;
+        sy = t.clientY;
+        st = Date.now();
+        moved = false;
+      }, { passive: true });
 
-    stage.addEventListener("touchend", (e) => {
-      const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
-      if (!t) return;
+      el.addEventListener("touchmove", (e) => {
+        moved = true;
+      }, { passive: true });
 
-      const dx = t.clientX - touchStartX;
-      const dy = t.clientY - touchStartY;
-      const dt = Date.now() - touchStartTime;
+      el.addEventListener("touchend", (e) => {
+        const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+        if (!t) return;
 
-      if (dt > SWIPE_MAX_MS) return;
-      if (Math.abs(dx) < SWIPE_MIN_X) return;
-      if (Math.abs(dy) > SWIPE_MAX_Y) return;
+        const dx = t.clientX - sx;
+        const dy = t.clientY - sy;
+        const dt = Date.now() - st;
 
-      if (dx < 0) {
-        next({ restartTimer: true }); // swipe esquerda -> próximo
-      } else {
-        prev({ restartTimer: true }); // swipe direita -> anterior
-      }
-    }, { passive: true });
-    // ===========================================================
+        // Tap simples (sem swipe) também navega
+        const isTap = !moved || (Math.abs(dx) < 10 && Math.abs(dy) < 10);
+
+        if (isTap) {
+          direction === "next" ? next({ restartTimer: true }) : prev({ restartTimer: true });
+          return;
+        }
+
+        // Swipe horizontal claro
+        if (dt > MAX_MS) return;
+        if (Math.abs(dx) < MIN_X) return;
+        if (Math.abs(dy) > MAX_Y) return;
+
+        // Se arrastou “na direção esperada” da borda
+        if (direction === "next" && dx < 0) next({ restartTimer: true });      // borda direita: arrastar pra esquerda
+        if (direction === "prev" && dx > 0) prev({ restartTimer: true });      // borda esquerda: arrastar pra direita
+      }, { passive: true });
+
+      // Clique (mouse) também funciona
+      el.addEventListener("click", () => {
+        direction === "next" ? next({ restartTimer: true }) : prev({ restartTimer: true });
+      });
+    }
+
+    attachSwipe(edgeRight, "next");
+    attachSwipe(edgeLeft, "prev");
+    // ==============================================
 
     // Start
     loadCurrent();
@@ -248,4 +271,3 @@
   </script>
 </body>
 </html>
-
