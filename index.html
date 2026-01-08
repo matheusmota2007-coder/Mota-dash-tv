@@ -1,206 +1,45 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TV de Gráficos</title>
+  <meta charset="utf-8">
+  <title>TV de Gráficos – Navegação Direta</title>
 
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: #000;
-      overflow: hidden;
-    }
-
-    #stage {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
-      background: #000;
-    }
-
-    iframe {
-      position: absolute;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      border: 0;
-      display: block;
-    }
-
-    .badge {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      color: #fff;
-      font: 14px Arial, sans-serif;
-      background: rgba(0,0,0,.45);
-      padding: 6px 10px;
-      border-radius: 10px;
-      z-index: 9999;
-      user-select: none;
-    }
-
-    .progress-wrap {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 8px;
-      background: rgba(255,255,255,.18);
-      z-index: 9999;
-    }
-
-    .progress-bar {
-      height: 100%;
-      width: 100%;
-      background: rgba(70,70,70,0.95);
-      transform-origin: left center;
-      transform: scaleX(1);
-    }
-
-    .nav-btn {
-      position: fixed;
-      bottom: 14px;
-      width: 54px;
-      height: 54px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(0,0,0,0.45);
-      color: rgba(255,255,255,0.92);
-      font: 24px Arial, sans-serif;
-      line-height: 54px;
-      text-align: center;
-      z-index: 10000;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .nav-btn:active {
-      transform: scale(0.96);
-    }
-
-    #btnPrev { left: 12px; }
-    #btnNext { right: 12px; }
-
-    @media (max-width: 420px) {
-      .nav-btn {
-        width: 46px;
-        height: 46px;
-        line-height: 46px;
-        font-size: 22px;
-        bottom: 12px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <div class="badge" id="badge"></div>
-
-  <div id="stage">
-    <iframe id="frame" allowfullscreen></iframe>
-  </div>
-
-  <div class="nav-btn" id="btnPrev">◀</div>
-  <div class="nav-btn" id="btnNext">▶</div>
-
-  <div class="progress-wrap">
-    <div class="progress-bar" id="progress"></div>
-  </div>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
 
   <script>
-    const URLS = [
+    const GRAFICOS = [
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml?widget=true&headers=false&gid=1375987279",
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml?widget=true&headers=false&gid=181392821",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml?widget=true&headers=false&gid=1377967419",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml?widget=true&headers=false&gid=989494084",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml?widget=true&headers=false&gid=409465462",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml?widget=true&headers=false&gid=1464654695",
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml?widget=true&headers=false&gid=1781419413"
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pubhtml?widget=true&headers=false&gid=1377967419"
     ];
 
-    const INTERVALO_MS = 30000;
+    const TEMPO_MS = 30000;
 
-    const frame = document.getElementById("frame");
-    const badge = document.getElementById("badge");
-    const progress = document.getElementById("progress");
-    const btnPrev = document.getElementById("btnPrev");
-    const btnNext = document.getElementById("btnNext");
-
-    let i = 0;
-    let startTime = 0;
-    let rafId = 0;
-    let paused = false;
-    let loaded = false;
-
-    function setProgress(v) {
-      progress.style.transform = `scaleX(${Math.max(0, Math.min(1, v))})`;
+    function getIndex() {
+      const p = new URLSearchParams(window.location.search);
+      return parseInt(p.get("i") || "0", 10);
     }
 
-    function renderBadge() {
-      badge.textContent = `Gráfico ${i + 1} / ${URLS.length} • ${paused ? "PAUSADO" : "AUTO"}`;
+    function nextIndex(i) {
+      return (i + 1) % GRAFICOS.length;
     }
 
-    function loadCurrent() {
-      loaded = false;
-      renderBadge();
-      setProgress(1);
-      frame.style.transform = "none";
-      frame.src = URLS[i];
+    function start() {
+      const i = getIndex();
+      const url = GRAFICOS[i];
+
+      setTimeout(() => {
+        const next = nextIndex(i);
+        window.location.replace(`index.html?i=${next}`);
+      }, TEMPO_MS);
+
+      window.location.replace(url);
     }
 
-    function startCycle() {
-      cancelAnimationFrame(rafId);
-      startTime = performance.now();
-      rafId = requestAnimationFrame(tick);
-    }
-
-    function tick(now) {
-      const elapsed = now - startTime;
-      const remaining = INTERVALO_MS - elapsed;
-      setProgress(remaining / INTERVALO_MS);
-
-      if (remaining <= 0) {
-        next();
-        return;
-      }
-      rafId = requestAnimationFrame(tick);
-    }
-
-    function next() {
-      i = (i + 1) % URLS.length;
-      loadCurrent();
-    }
-
-    function prev() {
-      i = (i - 1 + URLS.length) % URLS.length;
-      loadCurrent();
-    }
-
-    function togglePause() {
-      paused = !paused;
-      renderBadge();
-      cancelAnimationFrame(rafId);
-      if (!paused && loaded) startCycle();
-    }
-
-    frame.addEventListener("load", () => {
-      loaded = true;
-      if (!paused) startCycle();
-    });
-
-    btnNext.onclick = next;
-    btnPrev.onclick = prev;
-
-    window.addEventListener("keydown", (e) => {
-      if (["ArrowRight"," ","PageDown"].includes(e.key)) next();
-      if (["ArrowLeft","PageUp","Backspace"].includes(e.key)) prev();
-      if (e.key === "p" || e.key === "P") togglePause();
-    });
-
-    loadCurrent();
+    start();
   </script>
+</head>
+<body>
 </body>
 </html>
