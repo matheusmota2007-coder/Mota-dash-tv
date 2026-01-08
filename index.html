@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mota Dash TV – V2 (Fix CSV)</title>
+  <title>Mota Dash TV – V2 (Labels)</title>
 
   <style>
     html,body{
@@ -123,7 +123,7 @@ const LAST_DAYS = 30;
 const INTERVAL_MS = 30_000;
 
 /* =========================
-   HELPERS (UI)
+   UI
 ========================= */
 const elTitle = document.getElementById("title");
 const elMeta  = document.getElementById("meta");
@@ -140,7 +140,7 @@ function hideMsg(){
 }
 
 /* =========================
-   CSV PARSER (com aspas)
+   CSV parser (aspas)
 ========================= */
 function parseCSV(text){
   const rows = [];
@@ -178,26 +178,19 @@ function parseCSV(text){
     rows.push(row);
   }
 
-  // remove linhas vazias
   return rows.filter(r => r.some(x => String(x ?? "").trim() !== ""));
 }
 
-/* =========================
-   NORMALIZAÇÃO DE HEADER
-========================= */
 function normHeader(s){
   return String(s ?? "")
     .trim()
     .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")   // remove acentos
-    .replace(/[^\w\s]/g, " ")                          // remove pontuação
-    .replace(/\s+/g, " ")                              // espaços
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
-/* =========================
-   PARSE pt-BR
-========================= */
 function parsePercentOrNumber(v){
   const s = String(v ?? "").trim();
   if (!s) return null;
@@ -205,10 +198,9 @@ function parsePercentOrNumber(v){
   if (s.endsWith("%")){
     const raw = s.slice(0, -1).trim();
     const n = parsePercentOrNumber(raw);
-    return (n == null) ? null : n; // já em "pontos percentuais" (ex 59.99)
+    return (n == null) ? null : n; // em "pontos percentuais"
   }
 
-  // 1.727 -> 1727 ; 6,72 -> 6.72
   const norm = s.replace(/\./g, "").replace(",", ".");
   const n = Number(norm);
   return Number.isFinite(n) ? n : null;
@@ -219,7 +211,6 @@ function parseDDMMYYYY(v){
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (!m) return null;
   const dd = +m[1], mm = +m[2], yyyy = +m[3];
-  // UTC midday para evitar shift
   return new Date(Date.UTC(yyyy, mm-1, dd, 12, 0, 0));
 }
 
@@ -229,24 +220,36 @@ function parseHMS(v){
   if (!m) return null;
   const hh = +m[1], mm = +m[2], ss = +m[3];
   if (![hh,mm,ss].every(Number.isFinite)) return null;
-  return hh*3600 + mm*60 + ss; // segundos
+  return hh*3600 + mm*60 + ss;
 }
 
 function fmtDateShort(d){
-  // dd/mm
   const dd = String(d.getUTCDate()).padStart(2,"0");
   const mm = String(d.getUTCMonth()+1).padStart(2,"0");
   return `${dd}/${mm}`;
 }
 
+function fmtInt(n){
+  if (n == null) return "";
+  return Math.round(n).toLocaleString("pt-BR");
+}
+function fmt1(n){
+  if (n == null) return "";
+  return (Math.round(n*10)/10).toLocaleString("pt-BR");
+}
+function fmt2(n){
+  if (n == null) return "";
+  return (Math.round(n*100)/100).toLocaleString("pt-BR");
+}
+
 /* =========================
-   LOAD + BUILD MASTER
+   MASTER
 ========================= */
-let MASTER = []; // {date,label, util, ef5, pecas, tc_s, func_h, parado_h}
+let MASTER = [];
 
 async function loadMaster(){
   const u = new URL(CSV_URL);
-  u.searchParams.set("_", Date.now().toString()); // cache bust
+  u.searchParams.set("_", Date.now().toString());
 
   const resp = await fetch(u.toString(), { cache: "no-store" });
   if (!resp.ok) throw new Error(`Falha ao buscar CSV (${resp.status})`);
@@ -268,63 +271,54 @@ async function loadMaster(){
   const cData  = colIndex("data");
   const cPar   = colIndex("parado");
   const cFunc  = colIndex("funcionando");
-  const cTC    = colIndex("tc medio", "tc medio ");
+  const cTC    = colIndex("tc medio");
   const cPecas = colIndex("pecas fabric", "pecas fabricadas", "pecas fabric");
   const cUtil  = colIndex("utilizacao de maquina", "utilizacao maquina", "utilizacao");
-  const cEf5   = colIndex("eficiencia 5 dias media", "eficiencia -5 dias media", "eficiencia 5 dias");
+  const cEf5   = colIndex("eficiencia -5 dias media", "eficiencia 5 dias media", "eficiencia 5 dias");
 
   if (cData < 0) throw new Error("Coluna 'data' não encontrada no cabeçalho do CSV.");
 
   const out = [];
-
   for (let r=1; r<rows.length; r++){
     const row = rows[r];
 
     const d = parseDDMMYYYY(row[cData]);
     if (!d) continue;
 
-    const parado_s = cPar >= 0 ? parseHMS(row[cPar]) : null;
-    const func_s   = cFunc>= 0 ? parseHMS(row[cFunc]) : null;
-    const tc_s     = cTC  >= 0 ? parseHMS(row[cTC]) : null;
-    const pecas    = cPecas>=0 ? parsePercentOrNumber(row[cPecas]) : null;
-    const util     = cUtil>= 0 ? parsePercentOrNumber(row[cUtil]) : null; // já em %
-    const ef5      = cEf5 >= 0 ? parsePercentOrNumber(row[cEf5]) : null;  // já em %
+    const parado_s = cPar  >= 0 ? parseHMS(row[cPar])  : null;
+    const func_s   = cFunc >= 0 ? parseHMS(row[cFunc]) : null;
 
     out.push({
       date: d,
       label: fmtDateShort(d),
-      util: util,
-      ef5: ef5,
-      pecas: pecas,
-      tc_s: tc_s,
+      util:  cUtil  >= 0 ? parsePercentOrNumber(row[cUtil]) : null, // %
+      ef5:   cEf5   >= 0 ? parsePercentOrNumber(row[cEf5])  : null, // %
+      pecas: cPecas >= 0 ? parsePercentOrNumber(row[cPecas]) : null,
+      tc_s:  cTC    >= 0 ? parseHMS(row[cTC]) : null,
       func_h: (func_s == null ? null : func_s/3600),
       parado_h: (parado_s == null ? null : parado_s/3600),
     });
   }
 
-  // ordena por data
   out.sort((a,b) => a.date.getTime() - b.date.getTime());
+  MASTER = out.slice(-LAST_DAYS);
 
-  // últimos N dias
-  const sliced = out.slice(-LAST_DAYS);
-
-  if (!sliced.length) throw new Error("Não encontrei linhas válidas com data (dd/mm/aaaa).");
-
-  MASTER = sliced;
+  if (!MASTER.length) throw new Error("Não encontrei linhas válidas com data (dd/mm/aaaa).");
 }
 
 /* =========================
-   ECHARTS THEME / BASE OPTION
+   ECHARTS
 ========================= */
 let chart = null;
-function baseOption(title){
+
+function baseOption(){
   return {
     backgroundColor: "transparent",
     animation: true,
-    animationDuration: 600,
+    animationDuration: 650,
     animationEasing: "cubicOut",
     textStyle: { color: "#eaeaf0" },
-    grid: { left: 52, right: 18, top: 36, bottom: 44 },
+    grid: { left: 56, right: 18, top: 36, bottom: 44 },
     tooltip: {
       trigger: "axis",
       backgroundColor: "rgba(10,14,25,0.92)",
@@ -350,15 +344,57 @@ function baseOption(title){
   };
 }
 
-function gradientArea(){
+function gradientArea(colorTop="rgba(79,124,255,0.35)", colorBottom="rgba(79,124,255,0.03)"){
   return new echarts.graphic.LinearGradient(0,0,0,1,[
-    { offset: 0, color: "rgba(79,124,255,0.35)" },
-    { offset: 1, color: "rgba(79,124,255,0.03)" }
+    { offset: 0, color: colorTop },
+    { offset: 1, color: colorBottom }
   ]);
 }
 
+// Label “limpo” para linhas: só no último ponto
+function lineEndLabel(formatterFn){
+  return {
+    show: true,
+    position: "top",
+    distance: 6,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 13,
+    fontWeight: 700,
+    formatter: (p) => {
+      const idx = p.dataIndex;
+      const last = MASTER.length - 1;
+      if (idx !== last) return "";
+      return formatterFn(p.value);
+    }
+  };
+}
+
+// Label para barras: em cima de cada barra
+function barTopLabel(formatterFn){
+  return {
+    show: true,
+    position: "top",
+    color: "rgba(255,255,255,0.90)",
+    fontSize: 12,
+    fontWeight: 700,
+    formatter: (p) => formatterFn(p.value)
+  };
+}
+
+// Label para empilhado: no meio de cada segmento
+function stackInsideLabel(formatterFn){
+  return {
+    show: true,
+    position: "inside",
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 12,
+    fontWeight: 700,
+    formatter: (p) => formatterFn(p.value)
+  };
+}
+
 /* =========================
-   CHART DEFINITIONS
+   SCREENS
 ========================= */
 const SCREENS = [
   {
@@ -372,12 +408,11 @@ const SCREENS = [
         name: "Utilização (%)",
         type: "line",
         smooth: true,
-        symbol: "circle",
-        symbolSize: 6,
         showSymbol: false,
         connectNulls: true,
         lineStyle: { width: 3 },
-        areaStyle: { color: gradientArea() },
+        areaStyle: { color: gradientArea("rgba(79,124,255,0.33)", "rgba(79,124,255,0.03)") },
+        label: lineEndLabel(v => `${fmt2(v)}%`),
         data: MASTER.map(x => x.util)
       }];
       return opt;
@@ -397,10 +432,8 @@ const SCREENS = [
         showSymbol: false,
         connectNulls: true,
         lineStyle: { width: 3 },
-        areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
-          { offset: 0, color: "rgba(36,211,238,0.30)" },
-          { offset: 1, color: "rgba(36,211,238,0.03)" }
-        ])},
+        areaStyle: { color: gradientArea("rgba(36,211,238,0.28)", "rgba(36,211,238,0.03)") },
+        label: lineEndLabel(v => `${fmt2(v)}%`),
         data: MASTER.map(x => x.ef5)
       }];
       return opt;
@@ -416,12 +449,13 @@ const SCREENS = [
         type: "bar",
         barWidth: "55%",
         itemStyle: {
-          borderRadius: [8,8,0,0],
+          borderRadius: [10,10,0,0],
           color: new echarts.graphic.LinearGradient(0,0,0,1,[
             { offset: 0, color: "rgba(79,124,255,0.95)" },
             { offset: 1, color: "rgba(79,124,255,0.25)" }
           ])
         },
+        label: barTopLabel(v => fmtInt(v)),
         data: MASTER.map(x => x.pecas)
       }];
       return opt;
@@ -438,7 +472,8 @@ const SCREENS = [
         smooth: true,
         showSymbol: false,
         connectNulls: true,
-        lineStyle: { width: 3 },
+        lineStyle: { width: 3, color: "rgba(255,255,255,0.85)" },
+        label: lineEndLabel(v => `${fmtInt(v)}s`),
         data: MASTER.map(x => x.tc_s)
       }];
       return opt;
@@ -460,7 +495,8 @@ const SCREENS = [
           type: "bar",
           stack: "total",
           barWidth: "55%",
-          itemStyle: { borderRadius: [8,8,0,0], color: "rgba(36,211,238,0.85)" },
+          itemStyle: { borderRadius: [10,10,0,0], color: "rgba(36,211,238,0.85)" },
+          label: stackInsideLabel(v => `${fmt1(v)}h`),
           data: MASTER.map(x => x.func_h)
         },
         {
@@ -468,7 +504,8 @@ const SCREENS = [
           type: "bar",
           stack: "total",
           barWidth: "55%",
-          itemStyle: { borderRadius: [8,8,0,0], color: "rgba(255,99,132,0.70)" },
+          itemStyle: { borderRadius: [10,10,0,0], color: "rgba(255,99,132,0.72)" },
+          label: stackInsideLabel(v => `${fmt1(v)}h`),
           data: MASTER.map(x => x.parado_h)
         }
       ];
@@ -492,7 +529,6 @@ function setHeader(){
 function render(){
   hideMsg();
   setHeader();
-
   const opt = SCREENS[screenIdx].render();
   chart.setOption(opt, true);
   startT = performance.now();
@@ -546,12 +582,8 @@ window.addEventListener("keydown", (e) => {
   }catch(err){
     showMsg(
       "Não consegui montar os gráficos.\n\n" +
-      "Possíveis causas:\n" +
-      "• Planilha não está publicada na web\n" +
-      "• O CSV mudou o cabeçalho (nome das colunas)\n" +
-      "• A coluna DATA não está em dd/mm/aaaa\n\n" +
       "Erro: " + err.message + "\n\n" +
-      "Dica: abra o CSV no PC e confira se valores com vírgula estão entre aspas (\"60,00%\") — agora isso já está tratado."
+      "Dica: confirme se a planilha está 'Publicada na web' e se o CSV mantém o cabeçalho."
     );
     elTitle.textContent = "Erro ao carregar";
     elMeta.textContent = "Verifique a planilha";
