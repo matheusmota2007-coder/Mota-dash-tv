@@ -1,575 +1,243 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mota Dash TV</title>
- 
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: #000;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-      color: #fff;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mota Dash TV – V2</title>
 
-    #wrap {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      background: #000;
-    }
+<style>
+html,body{
+  height:100%;
+  margin:0;
+  background:#05070c;
+  color:#eaeaf0;
+  font-family:Inter, Arial, sans-serif;
+  overflow:hidden;
+}
 
-    #topbar {
-      position: relative;
-      padding: 10px 12px 6px 12px;
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 12px;
-      background: rgba(0,0,0,0.55);
-      z-index: 5;
-    }
+#app{
+  position:fixed;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+}
 
-    #title {
-      font-size: 16px;
-      font-weight: 700;
-      line-height: 1.2;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 72vw;
-    }
+#header{
+  padding:16px 20px 8px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+}
 
-    #meta {
-      font-size: 13px;
-      opacity: 0.92;
-      white-space: nowrap;
-    }
+#title{
+  font-size:22px;
+  font-weight:700;
+}
 
-    #stage {
-      position: relative;
-      flex: 1;
-      min-height: 0;
-      padding: 10px 10px 18px 10px;
-    }
+#meta{
+  font-size:14px;
+  opacity:.75;
+}
 
-    canvas {
-      width: 100% !important;
-      height: 100% !important;
-      display: block;
-    }
+#chart{
+  flex:1;
+}
 
-    #msg {
-      position: absolute;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 24px;
-      font-size: 15px;
-      background: rgba(0,0,0,0.78);
-      z-index: 8;
-      white-space: pre-wrap;
-    }
+#progressWrap{
+  height:6px;
+  background:rgba(255,255,255,.15);
+}
+#progress{
+  height:100%;
+  width:100%;
+  background:#4f7cff;
+  transform-origin:left;
+  transform:scaleX(1);
+}
+</style>
 
-    .progress-wrap {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      height: 8px;
-      background: rgba(255,255,255,.18);
-      z-index: 10;
-    }
-    .progress-bar {
-      height: 100%;
-      width: 100%;
-      background: rgba(140,140,140,0.9);
-      transform-origin: left center;
-      transform: scaleX(1);
-    }
-
-    .nav-btn {
-      position: fixed;
-      bottom: 14px;
-      width: 54px;
-      height: 54px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(0,0,0,0.45);
-      color: rgba(255,255,255,0.92);
-      font: 24px Arial, sans-serif;
-      line-height: 54px;
-      text-align: center;
-      z-index: 11;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .nav-btn:active { transform: scale(0.96); }
-    #btnPrev { left: 12px; }
-    #btnNext { right: 12px; }
-
-    @media (max-width: 420px) {
-      .nav-btn { width: 46px; height: 46px; line-height: 46px; font-size: 22px; bottom: 12px; }
-      #title { max-width: 62vw; }
-    }
-  </style>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<!-- ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 
 <body>
-  <div id="wrap">
-    <div id="topbar">
-      <div id="title">Carregando…</div>
-      <div id="meta"></div>
-    </div>
-
-    <div id="stage">
-      <canvas id="chart"></canvas>
-      <div id="msg"></div>
-    </div>
+<div id="app">
+  <div id="header">
+    <div id="title">Carregando…</div>
+    <div id="meta"></div>
   </div>
 
-  <div class="nav-btn" id="btnPrev" title="Anterior">◀</div>
-  <div class="nav-btn" id="btnNext" title="Próximo">▶</div>
+  <div id="chart"></div>
 
-  <div class="progress-wrap">
-    <div class="progress-bar" id="progress"></div>
+  <div id="progressWrap">
+    <div id="progress"></div>
   </div>
-
-  <script>
-    // =========================================================
-    // CONFIG (você só mexe aqui se precisar)
-    // =========================================================
-
-    // ✅ SEU CSV (master table)
-    const CSV_URL =
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQdQuoLLALTl3wLHHfrpuZAZkFybA4qRdGNExiE1tMT6LDJC2_j-fhS0Jzlv5NInYxbHaxNLI0CMggw/pub?gid=806509342&single=true&output=csv";
-
-    const INTERVALO_MS = 30_000;
-    const ULTIMOS_DIAS = 30;
-
-    // =========================================================
-    // UTIL (parse pt-BR)
-    // =========================================================
-    function showMessage(msg) {
-      const el = document.getElementById("msg");
-      el.style.display = "flex";
-      el.textContent = msg;
-    }
-    function hideMessage() {
-      const el = document.getElementById("msg");
-      el.style.display = "none";
-      el.textContent = "";
-    }
-
-    function parseCSV(text) {
-      // parser simples com suporte a aspas
-      const rows = [];
-      let row = [];
-      let cur = "";
-      let inQuotes = false;
-
-      for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        const next = text[i + 1];
-
-        if (c === '"' && inQuotes && next === '"') { cur += '"'; i++; continue; }
-        if (c === '"') { inQuotes = !inQuotes; continue; }
-
-        if (!inQuotes && (c === "\n" || c === "\r")) {
-          if (c === "\r" && next === "\n") i++;
-          row.push(cur);
-          rows.push(row);
-          row = [];
-          cur = "";
-          continue;
-        }
-
-        if (!inQuotes && c === ",") {
-          row.push(cur);
-          cur = "";
-          continue;
-        }
-
-        cur += c;
-      }
-      if (cur.length || row.length) {
-        row.push(cur);
-        rows.push(row);
-      }
-      return rows.filter(r => r.some(x => String(x ?? "").trim() !== ""));
-    }
-
-    function normalizeHeader(h) {
-      return String(h ?? "")
-        .trim()
-        .toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove acentos
-        .replace(/\s+/g, " ");
-    }
-
-    function parsePtNumber(v) {
-      const s = String(v ?? "").trim();
-      if (!s) return null;
-
-      // percent?
-      if (s.endsWith("%")) {
-        const raw = s.replace("%", "").trim();
-        const n = parsePtNumber(raw);
-        return (n == null) ? null : n / 100;
-      }
-
-      // remove espaços
-      const t = s.replace(/\s+/g, "");
-
-      // trata milhares pt-br (1.727) e decimais (6,72)
-      // regra: remove pontos, troca vírgula por ponto
-      const norm = t.replace(/\./g, "").replace(",", ".");
-      const n = Number(norm);
-      return Number.isFinite(n) ? n : null;
-    }
-
-    function parseDDMMYYYY(s) {
-      const t = String(s ?? "").trim();
-      const m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if (!m) return null;
-      const dd = Number(m[1]), mm = Number(m[2]), yyyy = Number(m[3]);
-      const d = new Date(Date.UTC(yyyy, mm - 1, dd, 12, 0, 0)); // meio-dia UTC evita shift
-      return Number.isFinite(d.getTime()) ? d : null;
-    }
-
-    function parseHMS(s) {
-      const t = String(s ?? "").trim();
-      const m = t.match(/^(\d{1,3}):(\d{2}):(\d{2})$/);
-      if (!m) return null;
-      const hh = Number(m[1]), mm = Number(m[2]), ss = Number(m[3]);
-      if (![hh,mm,ss].every(Number.isFinite)) return null;
-      return hh * 3600 + mm * 60 + ss; // segundos
-    }
-
-    function fmtDateBR(dateObj) {
-      const dd = String(dateObj.getUTCDate()).padStart(2, "0");
-      const mm = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
-      const yy = dateObj.getUTCFullYear();
-      return `${dd}/${mm}/${yy}`;
-    }
-
-    // =========================================================
-    // EXTRAÇÃO DA TABELA MASTER
-    // =========================================================
-    function buildMaster(rows) {
-      const header = rows[0].map(normalizeHeader);
-
-      function idxOf(name) {
-        const n = normalizeHeader(name);
-        const i = header.indexOf(n);
-        return i >= 0 ? i : -1;
-      }
-
-      // mapeia colunas pelo nome (flexível)
-      const cData = idxOf("data");
-      const cParado = idxOf("parado");
-      const cFunc = idxOf("funcionando");
-      const cTc = idxOf("tc medio");
-      const cPecas = idxOf("pecas fabric.");
-      const cUtil = idxOf("utilizacao de maquina");
-      const cEf5 = idxOf("eficiencia -5 dias media");
-
-      if (cData < 0) throw new Error("Coluna 'data' não encontrada no CSV.");
-
-      const out = [];
-      for (let r = 1; r < rows.length; r++) {
-        const row = rows[r];
-
-        const d = parseDDMMYYYY(row[cData]);
-        if (!d) continue;
-
-        out.push({
-          date: d,
-          dateLabel: fmtDateBR(d),
-
-          parado_s: cParado >= 0 ? parseHMS(row[cParado]) : null,
-          func_s:   cFunc  >= 0 ? parseHMS(row[cFunc])  : null,
-
-          tc_s:     cTc    >= 0 ? parseHMS(row[cTc])    : null,
-          pecas:    cPecas >= 0 ? parsePtNumber(row[cPecas]) : null,
-
-          util:     cUtil  >= 0 ? parsePtNumber(row[cUtil]) : null,   // 0..1
-          ef5:      cEf5   >= 0 ? parsePtNumber(row[cEf5])  : null    // 0..1
-        });
-      }
-
-      // ordena por data crescente
-      out.sort((a,b) => a.date.getTime() - b.date.getTime());
-
-      // últimos N dias
-      const slice = out.slice(-ULTIMOS_DIAS);
-      if (!slice.length) throw new Error("CSV não tem dados válidos (datas) para plotar.");
-
-      return slice;
-    }
-
-    // =========================================================
-    // GRÁFICOS (aqui ficam “bonitos” e sem manutenção)
-    // =========================================================
-    function hoursFromSeconds(s) {
-      return (s == null) ? null : (s / 3600);
-    }
-
-    function percent01To100(p) {
-      return (p == null) ? null : (p * 100);
-    }
-
-    const CHARTS = [
-      {
-        id: "util",
-        title: "Utilização da Máquina (%) — últimos 30 dias",
-        type: "line",
-        build: (data) => ({
-          labels: data.map(x => x.dateLabel),
-          datasets: [
-            { label: "Utilização (%)", data: data.map(x => percent01To100(x.util)), tension: 0.25, pointRadius: 2, borderWidth: 2 }
-          ]
-        }),
-        yTitle: "%"
-      },
-      {
-        id: "ef5",
-        title: "Eficiência (média 5 dias) (%) — últimos 30 dias",
-        type: "line",
-        build: (data) => ({
-          labels: data.map(x => x.dateLabel),
-          datasets: [
-            { label: "Eficiência 5d (%)", data: data.map(x => percent01To100(x.ef5)), tension: 0.25, pointRadius: 2, borderWidth: 2 }
-          ]
-        }),
-        yTitle: "%"
-      },
-      {
-        id: "pecas",
-        title: "Peças fabricadas (dia) — últimos 30 dias",
-        type: "bar",
-        build: (data) => ({
-          labels: data.map(x => x.dateLabel),
-          datasets: [
-            { label: "Peças", data: data.map(x => x.pecas), borderWidth: 1 }
-          ]
-        }),
-        yTitle: "Peças"
-      },
-      {
-        id: "tc",
-        title: "Tempo de ciclo médio (segundos) — últimos 30 dias",
-        type: "line",
-        build: (data) => ({
-          labels: data.map(x => x.dateLabel),
-          datasets: [
-            { label: "TC médio (s)", data: data.map(x => x.tc_s), tension: 0.25, pointRadius: 2, borderWidth: 2 }
-          ]
-        }),
-        yTitle: "s"
-      },
-      {
-        id: "parado_func",
-        title: "Parado vs Funcionando (horas) — últimos 30 dias",
-        type: "bar",
-        stacked: true,
-        build: (data) => ({
-          labels: data.map(x => x.dateLabel),
-          datasets: [
-            { label: "Funcionando (h)", data: data.map(x => hoursFromSeconds(x.func_s)), borderWidth: 1 },
-            { label: "Parado (h)", data: data.map(x => hoursFromSeconds(x.parado_s)), borderWidth: 1 }
-          ]
-        }),
-        yTitle: "h"
-      }
-    ];
-
-    // =========================================================
-    // PLAYER (rotação 30s)
-    // =========================================================
-    const elTitle = document.getElementById("title");
-    const elMeta  = document.getElementById("meta");
-    const progress = document.getElementById("progress");
-    const btnPrev = document.getElementById("btnPrev");
-    const btnNext = document.getElementById("btnNext");
-
-    let masterData = null;
-    let idx = 0;
-    let chart = null;
-
-    let rafId = 0;
-    let startTime = 0;
-    let paused = false;
-
-    function setProgress(fracRemaining) {
-      const v = Math.max(0, Math.min(1, fracRemaining));
-      progress.style.transform = `scaleX(${v})`;
-    }
-
-    function destroyChart() {
-      if (chart) { chart.destroy(); chart = null; }
-    }
-
-    function renderMeta() {
-      elMeta.textContent = `${idx + 1}/${CHARTS.length} • ${paused ? "PAUSADO" : "AUTO"}`;
-    }
-
-    function makeOptions(item) {
-      const stacked = !!item.stacked;
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        plugins: {
-          legend: {
-            labels: { color: "#fff", font: { size: 12 } }
-          },
-          title: { display: false }
-        },
-        scales: {
-          x: {
-            ticks: { color: "#fff", maxRotation: 0, autoSkip: true },
-            grid: { color: "rgba(255,255,255,0.08)" },
-            stacked
-          },
-          y: {
-            ticks: { color: "#fff" },
-            grid: { color: "rgba(255,255,255,0.08)" },
-            stacked,
-            title: item.yTitle ? { display: true, text: item.yTitle, color: "rgba(255,255,255,0.85)" } : { display: false }
-          }
-        }
-      };
-    }
-
-    function startCycle() {
-      cancelAnimationFrame(rafId);
-      startTime = performance.now();
-      setProgress(1);
-      if (!paused) rafId = requestAnimationFrame(tick);
-    }
-
-    function tick(now) {
-      const elapsed = now - startTime;
-      const remaining = INTERVALO_MS - elapsed;
-
-      setProgress(remaining / INTERVALO_MS);
-
-      if (remaining <= 0) { next(); return; }
-      rafId = requestAnimationFrame(tick);
-    }
-
-    function next() { goTo(idx + 1); }
-    function prev() { goTo(idx - 1); }
-
-    function togglePause() {
-      paused = !paused;
-      cancelAnimationFrame(rafId);
-      renderMeta();
-      if (!paused) startCycle();
-    }
-
-    function goTo(newIdx) {
-      const n = CHARTS.length;
-      idx = ((newIdx % n) + n) % n;
-      renderCurrent();
-      startCycle();
-    }
-
-    function renderCurrent() {
-      hideMessage();
-
-      const item = CHARTS[idx];
-      elTitle.textContent = item.title;
-      renderMeta();
-
-      const ctx = document.getElementById("chart").getContext("2d");
-      const built = item.build(masterData);
-
-      destroyChart();
-
-      chart = new Chart(ctx, {
-        type: item.type,
-        data: built,
-        options: makeOptions(item)
-      });
-    }
-
-    btnNext.addEventListener("click", () => next());
-    btnPrev.addEventListener("click", () => prev());
-
-    // Swipe (TV box touch / celular)
-    let sx = 0, sy = 0, started = false;
-    window.addEventListener("touchstart", (e) => {
-      if (!e.touches || e.touches.length !== 1) return;
-      started = true;
-      sx = e.touches[0].clientX;
-      sy = e.touches[0].clientY;
-    }, { passive: true });
-
-    window.addEventListener("touchend", (e) => {
-      if (!started) return;
-      started = false;
-
-      const t = e.changedTouches[0];
-      const dx = t.clientX - sx;
-      const dy = t.clientY - sy;
-
-      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
-      if (dx < 0) next();
-      else prev();
-    }, { passive: true });
-
-    // Teclado/controle
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") next();
-      else if (e.key === "ArrowLeft" || e.key === "Backspace" || e.key === "PageUp") prev();
-      else if (e.key === "p" || e.key === "P") togglePause();
-    });
-
-    // =========================================================
-    // BOOT
-    // =========================================================
-    async function boot() {
-      try {
-        elTitle.textContent = "Carregando dados…";
-        renderMeta();
-
-        // evita cache agressivo
-        const u = new URL(CSV_URL);
-        u.searchParams.set("_", Date.now().toString());
-
-        const resp = await fetch(u.toString(), { cache: "no-store" });
-        if (!resp.ok) throw new Error(`Falha ao buscar CSV (${resp.status})`);
-
-        const text = await resp.text();
-        const rows = parseCSV(text);
-
-        masterData = buildMaster(rows);
-
-        // se alguma coluna estiver faltando, ainda roda — mas alguns gráficos podem ficar vazios
-        renderCurrent();
-        startCycle();
-
-      } catch (err) {
-        destroyChart();
-        showMessage(
-          "Não consegui carregar os dados do Google Sheets.\n\n" +
-          "Verifique se a planilha está 'Publicada na Web' e se o link CSV está correto.\n\n" +
-          "Erro: " + err.message
-        );
-      }
-    }
-
-    boot();
-  </script>
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+const CSV_URL =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vQdQuoLLALTl3wLHHfrpuZAZkFybA4qRdGNExiE1tMT6LDJC2_j-fhS0Jzlv5NInYxbHaxNLI0CMggw/pub?gid=806509342&single=true&output=csv";
+
+const INTERVAL = 30000;
+const LAST_DAYS = 30;
+
+/* ================= UTIL ================= */
+function parseCSV(text){
+  return text.trim().split("\n").map(r=>r.split(","));
+}
+function ptNum(v){
+  if(!v) return null;
+  if(v.includes("%")) return parseFloat(v.replace("%","").replace(".","").replace(",","."))/100;
+  return parseFloat(v.replace(".","").replace(",","."));
+}
+function hms(v){
+  if(!v) return null;
+  const [h,m,s]=v.split(":").map(Number);
+  return h*3600+m*60+s;
+}
+function dmy(v){
+  const [d,m,y]=v.split("/");
+  return new Date(y,m-1,d);
+}
+function fmt(d){
+  return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+}
+
+/* ================= DATA ================= */
+let DATA=[];
+
+async function loadData(){
+  const r=await fetch(CSV_URL+"&_="+Date.now());
+  const t=await r.text();
+  const rows=parseCSV(t);
+  const h=rows[0].map(x=>x.toLowerCase());
+
+  const idx={
+    date:h.indexOf("data"),
+    parado:h.indexOf("parado"),
+    func:h.indexOf("funcionando"),
+    tc:h.indexOf("tc medio"),
+    pecas:h.indexOf("pecas fabric."),
+    util:h.indexOf("utilizacao de maquina"),
+    ef:h.indexOf("eficiencia -5 dias media")
+  };
+
+  DATA=rows.slice(1).map(r=>({
+    d:dmy(r[idx.date]),
+    parado:hms(r[idx.parado]),
+    func:hms(r[idx.func]),
+    tc:hms(r[idx.tc]),
+    pecas:ptNum(r[idx.pecas]),
+    util:ptNum(r[idx.util])*100,
+    ef:ptNum(r[idx.ef])*100
+  })).filter(x=>x.d).slice(-LAST_DAYS);
+}
+
+/* ================= CHARTS ================= */
+const charts=[
+{
+  title:"Utilização da Máquina (%)",
+  option:()=>({
+    yAxis:{max:100},
+    series:[{
+      type:"line",
+      smooth:true,
+      areaStyle:{opacity:.3},
+      data:DATA.map(x=>x.util)
+    }]
+  })
+},
+{
+  title:"Eficiência Média 5 dias (%)",
+  option:()=>({
+    yAxis:{max:100},
+    series:[{
+      type:"line",
+      smooth:true,
+      areaStyle:{opacity:.3},
+      data:DATA.map(x=>x.ef)
+    }]
+  })
+},
+{
+  title:"Peças Fabricadas por Dia",
+  option:()=>({
+    series:[{
+      type:"bar",
+      data:DATA.map(x=>x.pecas)
+    }]
+  })
+},
+{
+  title:"Tempo de Ciclo Médio (s)",
+  option:()=>({
+    series:[{
+      type:"line",
+      smooth:true,
+      data:DATA.map(x=>x.tc)
+    }]
+  })
+},
+{
+  title:"Parado vs Funcionando (h)",
+  option:()=>({
+    legend:{},
+    series:[
+      {name:"Funcionando",type:"bar",stack:"t",data:DATA.map(x=>x.func/3600)},
+      {name:"Parado",type:"bar",stack:"t",data:DATA.map(x=>x.parado/3600)}
+    ]
+  })
+}
+];
+
+let idx=0, chart, start;
+
+/* ================= PLAYER ================= */
+function render(){
+  const c=charts[idx];
+  document.getElementById("title").textContent=c.title;
+  document.getElementById("meta").textContent=`${idx+1}/${charts.length}`;
+
+  chart.setOption({
+    backgroundColor:"transparent",
+    tooltip:{trigger:"axis"},
+    grid:{left:50,right:20,top:30,bottom:40},
+    xAxis:{
+      type:"category",
+      data:DATA.map(x=>fmt(x.d)),
+      axisLine:{lineStyle:{color:"#666"}},
+      axisLabel:{color:"#aaa"}
+    },
+    yAxis:{
+      type:"value",
+      axisLine:{show:false},
+      splitLine:{lineStyle:{color:"rgba(255,255,255,.05)"}},
+      axisLabel:{color:"#aaa"}
+    },
+    ...c.option()
+  },true);
+
+  start=performance.now();
+}
+
+function tick(t){
+  const p=Math.max(0,1-(t-start)/INTERVAL);
+  document.getElementById("progress").style.transform=`scaleX(${p})`;
+  if(p<=0){
+    idx=(idx+1)%charts.length;
+    render();
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ================= BOOT ================= */
+(async()=>{
+  await loadData();
+  chart=echarts.init(document.getElementById("chart"));
+  render();
+  requestAnimationFrame(tick);
+})();
+</script>
 </body>
 </html>
-
