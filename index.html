@@ -3,24 +3,138 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mota Dash TV – Multi Links</title>
+  <title>Mota Dash TV – Analytics</title>
   
   <style>
-    html,body{height:100%;margin:0;background:#05070c;color:#eaeaf0;font-family:Inter,Arial,sans-serif;overflow:hidden;}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{height:100%;background:#0a0e19;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;overflow:hidden;}
+    
     #app{position:fixed;inset:0;display:flex;flex-direction:column;}
-    #header{padding:16px 20px 10px;display:flex;justify-content:space-between;align-items:flex-end;gap:14px;background:rgba(0,0,0,.35);backdrop-filter:blur(6px);}
-    #title{font-size:22px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68vw;}
-    #meta{font-size:13px;opacity:.78;white-space:nowrap;text-align:right;}
-    #chartWrap{position:relative;flex:1;min-height:0;}
+    
+    /* Header profissional */
+    #header{
+      padding:20px 28px;
+      background:linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.92) 100%);
+      backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      box-shadow:0 4px 20px rgba(0,0,0,0.3);
+    }
+    #headerTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+    #logo{font-size:15px;font-weight:600;color:#64748b;letter-spacing:0.5px;text-transform:uppercase;}
+    #status{display:flex;gap:16px;align-items:center;font-size:13px;}
+    .status-item{display:flex;align-items:center;gap:6px;color:#94a3b8;}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 2s ease-in-out infinite;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+    
+    #title{font-size:28px;font-weight:700;color:#f1f5f9;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    
+    /* Chart area moderna */
+    #chartWrap{position:relative;flex:1;min-height:0;background:linear-gradient(180deg, #0f172a 0%, #1e293b 100%);}
     #chart{position:absolute;inset:0;}
-    #msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:26px;white-space:pre-wrap;background:rgba(0,0,0,.72);z-index:9;font-size:14px;line-height:1.35;}
-    #progressWrap{height:6px;background:rgba(255,255,255,.12);}
-    #progress{height:100%;width:100%;background:linear-gradient(90deg,#4f7cff,#24d3ee);transform-origin:left;transform:scaleX(1);}
-    .nav-btn{position:fixed;bottom:12px;width:54px;height:54px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.35);color:rgba(255,255,255,.92);font:26px Arial,sans-serif;line-height:54px;text-align:center;z-index:20;user-select:none;-webkit-tap-highlight-color:transparent;}
-    .nav-btn:active{transform:scale(.96);}
-    #prev{left:12px;} #next{right:12px;}
-    #perfIndicator{position:fixed;top:10px;right:10px;padding:4px 10px;background:rgba(0,0,0,.6);border-radius:12px;font-size:11px;z-index:25;opacity:.7;}
-    .perf-low{color:#ff6b6b;} .perf-high{color:#51cf66;}
+    
+    /* Loading/Error overlay */
+    #overlay{
+      position:absolute;inset:0;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(10,14,25,0.95);backdrop-filter:blur(8px);
+      z-index:100;transition:opacity 0.3s;
+    }
+    #overlay.hidden{opacity:0;pointer-events:none;}
+    .overlay-content{text-align:center;padding:40px;}
+    .spinner{
+      width:48px;height:48px;margin:0 auto 20px;
+      border:4px solid rgba(255,255,255,0.1);
+      border-top-color:#3b82f6;
+      border-radius:50%;
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .overlay-text{font-size:16px;color:#cbd5e1;margin-bottom:8px;}
+    .overlay-subtext{font-size:13px;color:#64748b;}
+    .error-icon{font-size:48px;margin-bottom:16px;}
+    
+    /* Progress bar moderna */
+    #progressWrap{
+      height:3px;
+      background:rgba(255,255,255,0.05);
+      position:relative;
+      overflow:hidden;
+    }
+    #progress{
+      height:100%;width:100%;
+      background:linear-gradient(90deg,#3b82f6,#8b5cf6,#ec4899);
+      transform-origin:left;
+      transition:transform 0.1s linear;
+    }
+    
+    /* Botões de navegação modernos */
+    .nav-btn{
+      position:fixed;bottom:24px;
+      width:56px;height:56px;
+      border-radius:50%;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(15,23,42,0.9);
+      backdrop-filter:blur(8px);
+      color:#e8eaed;
+      font-size:20px;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;
+      z-index:50;
+      transition:all 0.2s;
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    }
+    .nav-btn:hover{
+      background:rgba(59,130,246,0.9);
+      border-color:rgba(59,130,246,0.5);
+      transform:scale(1.05);
+      box-shadow:0 6px 20px rgba(59,130,246,0.4);
+    }
+    .nav-btn:active{transform:scale(0.95);}
+    #prev{left:24px;}
+    #next{right:24px;}
+    
+    /* Info badge flutuante */
+    #infoBadge{
+      position:fixed;
+      top:24px;right:24px;
+      padding:8px 16px;
+      background:rgba(15,23,42,0.9);
+      backdrop-filter:blur(8px);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:20px;
+      font-size:12px;
+      color:#94a3b8;
+      z-index:50;
+      box-shadow:0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    /* Notificação de atualização */
+    #updateNotif{
+      position:fixed;
+      top:24px;left:50%;
+      transform:translateX(-50%) translateY(-120px);
+      padding:12px 24px;
+      background:linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      border-radius:24px;
+      font-size:13px;
+      font-weight:600;
+      color:#fff;
+      box-shadow:0 8px 24px rgba(34,197,94,0.4);
+      z-index:60;
+      transition:transform 0.4s cubic-bezier(0.68,-0.55,0.265,1.55);
+    }
+    #updateNotif.show{transform:translateX(-50%) translateY(0);}
+    
+    /* Responsive */
+    @media (max-width:768px){
+      #header{padding:16px 20px;}
+      #title{font-size:20px;}
+      #status{font-size:11px;gap:12px;}
+      .nav-btn{width:48px;height:48px;bottom:16px;}
+      #prev{left:16px;}
+      #next{right:16px;}
+      #infoBadge{top:16px;right:16px;font-size:11px;padding:6px 12px;}
+    }
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
@@ -29,85 +143,78 @@
 <body>
 <div id="app">
   <div id="header">
-    <div id="title">Carregando…</div>
-    <div id="meta"></div>
+    <div id="headerTop">
+      <div id="logo">MOTA ANALYTICS</div>
+      <div id="status">
+        <div class="status-item">
+          <div class="status-dot"></div>
+          <span id="statusText">Ao vivo</span>
+        </div>
+        <div class="status-item">
+          <span>📊</span>
+          <span id="dataInfo">Carregando...</span>
+        </div>
+      </div>
+    </div>
+    <div id="title">Inicializando...</div>
   </div>
+  
   <div id="chartWrap">
     <div id="chart"></div>
-    <div id="msg"></div>
+    <div id="overlay">
+      <div class="overlay-content">
+        <div class="spinner"></div>
+        <div class="overlay-text">Carregando dados...</div>
+        <div class="overlay-subtext">Conectando aos sensores</div>
+      </div>
+    </div>
   </div>
+  
   <div id="progressWrap"><div id="progress"></div></div>
 </div>
 
-<div class="nav-btn" id="prev" title="Anterior">◀</div>
-<div class="nav-btn" id="next" title="Próximo">▶</div>
-<div id="perfIndicator"></div>
+<div class="nav-btn" id="prev">◀</div>
+<div class="nav-btn" id="next">▶</div>
+<div id="infoBadge">1/10</div>
+<div id="updateNotif">✓ Dados atualizados</div>
 
 <script>
 /* =========================
-   DETECÇÃO DE PERFORMANCE
+   CONFIGURAÇÃO
 ========================= */
-function detectPerformanceMode(){
-  const checks = {
-    lowMemory: navigator.deviceMemory && navigator.deviceMemory <= 4,
-    lowCores: navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2,
-    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-    isTVBox: /TV|SmartTV|AFTT|AFTM|AFTB|AFT/i.test(navigator.userAgent),
-    slowConnection: navigator.connection && (navigator.connection.effectiveType === 'slow-2g' || navigator.connection.effectiveType === '2g')
-  };
-  
-  // Se detectar qualquer sinal de hardware limitado, usa modo de baixa performance
-  const isLowPerf = checks.lowMemory || checks.lowCores || checks.isTVBox || checks.slowConnection;
-  
-  return {
-    mode: isLowPerf ? 'low' : 'high',
-    details: checks
-  };
-}
-
-const PERF = detectPerformanceMode();
-
-// Mostrar indicador de modo
-const perfIndicator = document.getElementById('perfIndicator');
-if(PERF.mode === 'low'){
-  perfIndicator.className = 'perf-low';
-  perfIndicator.textContent = '⚡ Modo Otimizado';
-} else {
-  perfIndicator.className = 'perf-high';
-  perfIndicator.textContent = '🚀 Modo Performance';
-}
+const CONFIG = {
+  sources: [
+    {
+      name: "Máquina de Costura",
+      csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pub?gid=806509342&single=true&output=csv"
+    },
+    {
+      name: "Corte",
+      csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pub?gid=279273967&single=true&output=csv"
+    }
+  ],
+  lastDays: 20,              // Otimizado para performance
+  slideInterval: 35000,      // 35 segundos por slide
+  autoRefresh: 300000,       // Atualiza dados a cada 5 minutos
+  animation: false,          // Sem animação = melhor performance
+};
 
 /* =========================
-   CONFIG
+   ELEMENTOS DOM
 ========================= */
-const SOURCES = [
-  {
-    name: "Maquina de costura",
-    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSePvDhgfqtEf49n0yzoxCYmzR53HTyvrJQ9a4gf8T03-cpkSPoH1rwlACeeDVeLpMIqmnHDJnHU4wY/pub?gid=806509342&single=true&output=csv"
-  },
-  {
-    name: "Corte",
-    csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRnL9qLyOpMIB4Sko6Dk0Vz1sRgdUhCy9bVz1Kd30dmAjqOlxxwpCO2yVcV9dX8wVWW9OrhdMbEc4jT/pub?gid=279273967&single=true&output=csv"
-  },
-];
-
-// Configurações adaptativas baseadas em performance
-const LAST_DAYS = PERF.mode === 'low' ? 15 : 30;
-const INTERVAL_MS = PERF.mode === 'low' ? 45_000 : 30_000;
+const DOM = {
+  title: document.getElementById("title"),
+  dataInfo: document.getElementById("dataInfo"),
+  statusText: document.getElementById("statusText"),
+  overlay: document.getElementById("overlay"),
+  progress: document.getElementById("progress"),
+  infoBadge: document.getElementById("infoBadge"),
+  updateNotif: document.getElementById("updateNotif"),
+  chart: null
+};
 
 /* =========================
-   UI
-========================= */
-const elTitle = document.getElementById("title");
-const elMeta  = document.getElementById("meta");
-const elMsg   = document.getElementById("msg");
-const elProg  = document.getElementById("progress");
-
-function showMsg(txt){ elMsg.style.display="flex"; elMsg.textContent=txt; }
-function hideMsg(){ elMsg.style.display="none"; elMsg.textContent=""; }
-
-/* =========================
-   CSV parser (aspas)
+   UTILITÁRIOS
 ========================= */
 function parseCSV(text){
   const rows=[]; let row=[]; let cur=""; let inQuotes=false;
@@ -132,323 +239,317 @@ function normHeader(s){
     .replace(/[^\w\s]/g," ").replace(/\s+/g," ").trim();
 }
 
-function parsePercentOrNumber(v){
+function parseNum(v){
   const s=String(v??"").trim(); if(!s) return null;
   if(s.endsWith("%")){
     const raw=s.slice(0,-1).trim();
-    const n=parsePercentOrNumber(raw);
-    return n==null?null:n;
+    return parseNum(raw);
   }
   const norm=s.replace(/\./g,"").replace(",",".");
   const n=Number(norm);
   return Number.isFinite(n)?n:null;
 }
 
-function parseDDMMYYYY(v){
+function parseDate(v){
   const s=String(v??"").trim();
   const m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if(!m) return null;
   return new Date(Date.UTC(+m[3], +m[2]-1, +m[1], 12,0,0));
 }
 
-function parseHMS(v){
+function parseTime(v){
   const s=String(v??"").trim();
   const m=s.match(/^(\d{1,3}):(\d{2}):(\d{2})$/);
   if(!m) return null;
-  const hh=+m[1], mm=+m[2], ss=+m[3];
-  if(![hh,mm,ss].every(Number.isFinite)) return null;
-  return hh*3600+mm*60+ss;
+  return +m[1]*3600 + +m[2]*60 + +m[3];
 }
 
-function fmtDateShort(d){
-  const dd=String(d.getUTCDate()).padStart(2,"0");
-  const mm=String(d.getUTCMonth()+1).padStart(2,"0");
-  return `${dd}/${mm}`;
+function fmtDate(d){
+  return `${String(d.getUTCDate()).padStart(2,"0")}/${String(d.getUTCMonth()+1).padStart(2,"0")}`;
 }
 
-function fmtInt(n){ return (n==null) ? "" : Math.round(n).toLocaleString("pt-BR"); }
-function fmt1(n){ return (n==null) ? "" : (Math.round(n*10)/10).toLocaleString("pt-BR"); }
-function fmt2(n){ return (n==null) ? "" : (Math.round(n*100)/100).toLocaleString("pt-BR"); }
+function fmtInt(n){ return (n==null)?"":Math.round(n).toLocaleString("pt-BR"); }
+function fmt1(n){ return (n==null)?"":(Math.round(n*10)/10).toLocaleString("pt-BR"); }
+function fmt2(n){ return (n==null)?"":(Math.round(n*100)/100).toLocaleString("pt-BR"); }
 
 /* =========================
-   LOAD MASTER per SOURCE
+   CARREGAMENTO DE DADOS
 ========================= */
-async function loadMasterFrom(csvUrl){
-  const u=new URL(csvUrl);
-  u.searchParams.set("_", Date.now().toString());
-  const resp=await fetch(u.toString(), {cache:"no-store"});
-  if(!resp.ok) throw new Error(`Falha ao buscar CSV (${resp.status})`);
-  const text=await resp.text();
-  const rows=parseCSV(text);
-  if(rows.length<2) throw new Error("CSV vazio.");
+async function loadData(csvUrl, retries = 3){
+  for(let attempt = 1; attempt <= retries; attempt++){
+    try {
+      const u = new URL(csvUrl);
+      u.searchParams.set("_", Date.now().toString());
+      
+      const resp = await fetch(u.toString(), {
+        cache:"no-store",
+        mode:"cors",
+        headers: {
+          'Accept': 'text/csv,text/plain,*/*'
+        }
+      });
+      
+      if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      
+      const text = await resp.text();
+      const rows = parseCSV(text);
+      if(rows.length < 2) throw new Error("CSV vazio");
 
-  const header=rows[0].map(normHeader);
-  function colIndex(...aliases){
-    for(const a of aliases){
-      const i=header.indexOf(normHeader(a));
-      if(i>=0) return i;
+      const header = rows[0].map(normHeader);
+      const findCol = (...aliases) => {
+        for(const a of aliases){
+          const i = header.indexOf(normHeader(a));
+          if(i >= 0) return i;
+        }
+        return -1;
+      };
+
+      const cols = {
+        data: findCol("data"),
+        parado: findCol("parado"),
+        func: findCol("funcionando"),
+        tc: findCol("tc medio"),
+        pecas: findCol("pecas fabric","pecas fabricadas"),
+        util: findCol("utilizacao de maquina","utilizacao maquina","utilizacao"),
+        ef5: findCol("eficiencia -5 dias media","eficiencia 5 dias media","eficiencia 5 dias")
+      };
+
+      if(cols.data < 0) throw new Error("Coluna 'data' não encontrada");
+
+      const data = [];
+      for(let r=1; r<rows.length; r++){
+        const row = rows[r];
+        const date = parseDate(row[cols.data]);
+        if(!date) continue;
+
+        const parado_s = cols.parado>=0 ? parseTime(row[cols.parado]) : null;
+        const func_s = cols.func>=0 ? parseTime(row[cols.func]) : null;
+
+        data.push({
+          date,
+          label: fmtDate(date),
+          util: cols.util>=0 ? parseNum(row[cols.util]) : null,
+          ef5: cols.ef5>=0 ? parseNum(row[cols.ef5]) : null,
+          pecas: cols.pecas>=0 ? parseNum(row[cols.pecas]) : null,
+          tc_s: cols.tc>=0 ? parseTime(row[cols.tc]) : null,
+          func_h: func_s==null ? null : func_s/3600,
+          parado_h: parado_s==null ? null : parado_s/3600,
+        });
+      }
+
+      data.sort((a,b) => a.date.getTime() - b.date.getTime());
+      return data.slice(-CONFIG.lastDays);
+      
+    } catch(err) {
+      console.warn(`Tentativa ${attempt}/${retries} falhou:`, err.message);
+      
+      if(attempt === retries) {
+        throw new Error(`Falha após ${retries} tentativas: ${err.message}`);
+      }
+      
+      // Aguarda antes de tentar novamente
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
-    return -1;
   }
-
-  const cData  = colIndex("data");
-  const cPar   = colIndex("parado");
-  const cFunc  = colIndex("funcionando");
-  const cTC    = colIndex("tc medio");
-  const cPecas = colIndex("pecas fabric", "pecas fabricadas", "pecas fabric");
-  const cUtil  = colIndex("utilizacao de maquina", "utilizacao maquina", "utilizacao");
-  const cEf5   = colIndex("eficiencia -5 dias media", "eficiencia 5 dias media", "eficiencia 5 dias");
-
-  if(cData<0) throw new Error("Coluna 'data' não encontrada.");
-
-  const out=[];
-  for(let r=1;r<rows.length;r++){
-    const row=rows[r];
-    const d=parseDDMMYYYY(row[cData]);
-    if(!d) continue;
-
-    const parado_s = cPar>=0 ? parseHMS(row[cPar]) : null;
-    const func_s   = cFunc>=0? parseHMS(row[cFunc]): null;
-
-    out.push({
-      date:d,
-      label:fmtDateShort(d),
-      util:  cUtil>=0 ? parsePercentOrNumber(row[cUtil]) : null,
-      ef5:   cEf5>=0  ? parsePercentOrNumber(row[cEf5])  : null,
-      pecas: cPecas>=0? parsePercentOrNumber(row[cPecas]): null,
-      tc_s:  cTC>=0   ? parseHMS(row[cTC])               : null,
-      func_h: (func_s==null?null:func_s/3600),
-      parado_h: (parado_s==null?null:parado_s/3600),
-    });
-  }
-
-  out.sort((a,b)=>a.date.getTime()-b.date.getTime());
-  const sliced = out.slice(-LAST_DAYS);
-  if(!sliced.length) throw new Error("Sem dados válidos de data.");
-  return sliced;
 }
 
 /* =========================
-   ECHARTS helpers (ADAPTATIVO)
+   CRIAÇÃO DE GRÁFICOS
 ========================= */
-function baseOption(master){
-  const isLowPerf = PERF.mode === 'low';
-  
+function baseOption(data){
   return {
     backgroundColor:"transparent",
-    animation: !isLowPerf,
-    animationDuration: isLowPerf ? 0 : 1200,
-    animationEasing: isLowPerf ? "linear" : "cubicOut",
-    textStyle:{color:"#eaeaf0"},
-    grid:{left:56,right:18,top:36,bottom:44},
+    animation: CONFIG.animation,
+    textStyle:{color:"#e8eaed",fontFamily:"inherit"},
+    grid:{left:60,right:24,top:48,bottom:48},
     tooltip:{
       trigger:"axis",
-      backgroundColor:"rgba(10,14,25,0.92)",
-      borderColor:"rgba(255,255,255,0.08)",
+      backgroundColor:"rgba(15,23,42,0.95)",
+      borderColor:"rgba(59,130,246,0.3)",
       borderWidth:1,
       textStyle:{color:"#fff"},
-      axisPointer:{type:"line"}
+      axisPointer:{
+        type:"line",
+        lineStyle:{color:"rgba(59,130,246,0.4)",width:1}
+      }
     },
     xAxis:{
       type:"category",
-      data:master.map(x=>x.label),
-      axisLine:{lineStyle:{color:"rgba(255,255,255,0.18)"}},
+      data:data.map(x=>x.label),
+      axisLine:{lineStyle:{color:"rgba(255,255,255,0.1)"}},
       axisTick:{show:false},
-      axisLabel:{color:"rgba(255,255,255,0.72)"}
+      axisLabel:{color:"rgba(148,163,184,0.9)",fontSize:11}
     },
     yAxis:{
       type:"value",
       axisLine:{show:false},
       axisTick:{show:false},
-      axisLabel:{color:"rgba(255,255,255,0.72)"},
-      splitLine:{lineStyle:{color:"rgba(255,255,255,0.06)"}}
+      axisLabel:{color:"rgba(148,163,184,0.9)",fontSize:11},
+      splitLine:{lineStyle:{color:"rgba(255,255,255,0.04)",width:1}}
     }
   };
 }
 
-function gradientArea(top, bottom){
-  if(PERF.mode === 'low'){
-    // Modo otimizado: cor sólida ao invés de gradiente
-    return top.replace(/[\d.]+\)$/, '0.2)'); // reduz opacidade
-  }
-  // Modo high performance: gradiente completo
-  return new echarts.graphic.LinearGradient(0,0,0,1,[
-    {offset:0,color:top},{offset:1,color:bottom}
-  ]);
-}
-
-function gradientBar(top, bottom){
-  if(PERF.mode === 'low'){
-    return top; // cor sólida
-  }
-  return new echarts.graphic.LinearGradient(0,0,0,1,[
-    {offset:0,color:top},{offset:1,color:bottom}
-  ]);
-}
-
-function lineEndLabel(master, fmtFn, suffix=""){
-  return {
-    show:true, position:"top", distance:6,
-    color:"rgba(255,255,255,0.92)", fontSize:13, fontWeight:700,
-    formatter:(p)=> (p.dataIndex===master.length-1) ? `${fmtFn(p.value)}${suffix}` : ""
-  };
-}
-
-function lineAllLabels(fmtFn, suffix=""){
-  return {
-    show:true,
-    position:"top",
-    distance:6,
-    color:"rgba(255,255,255,0.90)",
-    fontSize:11,
-    fontWeight:700,
-    formatter:(p)=>{
-      if(p.value == null || p.value === "" || Number.isNaN(p.value)) return "";
-      return `${fmtFn(p.value)}${suffix}`;
-    }
-  };
-}
-
-function barTopLabel(fmtFn, suffix=""){
-  return {
-    show:true,
-    position:"top",
-    color:"rgba(255,255,255,0.90)",
-    fontSize:12,
-    fontWeight:700,
-    formatter:(p)=> `${fmtFn(p.value)}${suffix}`
-  };
-}
-
-function stackInsideLabel(fmtFn, suffix=""){
-  return {
-    show:true,
-    position:"inside",
-    color:"rgba(255,255,255,0.92)",
-    fontSize:12,
-    fontWeight:700,
-    formatter:(p)=> `${fmtFn(p.value)}${suffix}`
-  };
-}
-
-/* =========================
-   5 gráficos por fonte (template)
-========================= */
-function buildFiveScreensForSource(sourceIndex){
-  const src = SOURCES[sourceIndex];
-  const master = DATA_BY_SOURCE[sourceIndex];
-  const isLowPerf = PERF.mode === 'low';
+function createScreens(sourceIndex, sourceData){
+  const src = CONFIG.sources[sourceIndex];
+  const data = sourceData;
 
   return [
+    // Utilização
     {
-      title: `${src.name} • Utilização da Máquina (%)`,
+      title: `${src.name} • Utilização da Máquina`,
       option: () => {
-        const opt = baseOption(master);
+        const opt = baseOption(data);
         opt.yAxis.min=0; opt.yAxis.max=100;
         opt.series=[{
           name:"Utilização (%)",
           type:"line",
-          smooth: !isLowPerf,
+          smooth:false,
           showSymbol:true,
           symbol:"circle",
-          symbolSize: isLowPerf ? 3 : 5,
+          symbolSize:4,
           connectNulls:true,
-          lineStyle:{width: isLowPerf ? 2 : 3},
-          areaStyle:{color:gradientArea("rgba(79,124,255,0.33)","rgba(79,124,255,0.03)")},
-          label: lineAllLabels(fmt2, "%"),
-          data: master.map(x=>x.util)
+          lineStyle:{width:2,color:"#3b82f6"},
+          itemStyle:{color:"#3b82f6"},
+          areaStyle:{color:{
+            type:"linear",x:0,y:0,x2:0,y2:1,
+            colorStops:[
+              {offset:0,color:"rgba(59,130,246,0.2)"},
+              {offset:1,color:"rgba(59,130,246,0.02)"}
+            ]
+          }},
+          label:{
+            show:true,position:"top",distance:4,
+            color:"#e8eaed",fontSize:10,fontWeight:600,
+            formatter:p=>p.value==null?"":fmt2(p.value)+"%"
+          },
+          data:data.map(x=>x.util)
         }];
         return opt;
       }
     },
+    // Eficiência
     {
-      title: `${src.name} • Eficiência (média 5 dias) (%)`,
+      title: `${src.name} • Eficiência (5 dias)`,
       option: () => {
-        const opt = baseOption(master);
+        const opt = baseOption(data);
         opt.yAxis.min=0; opt.yAxis.max=100;
         opt.series=[{
-          name:"Eficiência 5d (%)",
+          name:"Eficiência (%)",
           type:"line",
-          smooth: !isLowPerf,
+          smooth:false,
           showSymbol:true,
           symbol:"circle",
-          symbolSize: isLowPerf ? 3 : 5,
+          symbolSize:4,
           connectNulls:true,
-          lineStyle:{width: isLowPerf ? 2 : 3},
-          areaStyle:{color:gradientArea("rgba(36,211,238,0.28)","rgba(36,211,238,0.03)")},
-          label: lineAllLabels(fmt2, "%"),
-          data: master.map(x=>x.ef5)
+          lineStyle:{width:2,color:"#8b5cf6"},
+          itemStyle:{color:"#8b5cf6"},
+          areaStyle:{color:{
+            type:"linear",x:0,y:0,x2:0,y2:1,
+            colorStops:[
+              {offset:0,color:"rgba(139,92,246,0.2)"},
+              {offset:1,color:"rgba(139,92,246,0.02)"}
+            ]
+          }},
+          label:{
+            show:true,position:"top",distance:4,
+            color:"#e8eaed",fontSize:10,fontWeight:600,
+            formatter:p=>p.value==null?"":fmt2(p.value)+"%"
+          },
+          data:data.map(x=>x.ef5)
         }];
         return opt;
       }
     },
+    // Peças
     {
-      title: `${src.name} • Peças produzidas (dia)`,
+      title: `${src.name} • Produção Diária`,
       option: () => {
-        const opt = baseOption(master);
+        const opt = baseOption(data);
         opt.series=[{
           name:"Peças",
           type:"bar",
-          barWidth:"55%",
+          barWidth:"60%",
           itemStyle:{
-            borderRadius: isLowPerf ? [6,6,0,0] : [10,10,0,0],
-            color: gradientBar("rgba(79,124,255,0.95)", "rgba(79,124,255,0.25)")
+            borderRadius:[6,6,0,0],
+            color:{
+              type:"linear",x:0,y:0,x2:0,y2:1,
+              colorStops:[
+                {offset:0,color:"#3b82f6"},
+                {offset:1,color:"rgba(59,130,246,0.6)"}
+              ]
+            }
           },
-          label: barTopLabel(fmtInt),
-          data: master.map(x=>x.pecas)
+          label:{
+            show:true,position:"top",
+            color:"#e8eaed",fontSize:11,fontWeight:600,
+            formatter:p=>fmtInt(p.value)
+          },
+          data:data.map(x=>x.pecas)
         }];
         return opt;
       }
     },
+    // Tempo de ciclo
     {
-      title: `${src.name} • Tempo de ciclo médio (s)`,
+      title: `${src.name} • Tempo de Ciclo Médio`,
       option: () => {
-        const opt = baseOption(master);
+        const opt = baseOption(data);
         opt.series=[{
           name:"TC médio (s)",
           type:"line",
-          smooth: !isLowPerf,
+          smooth:false,
           showSymbol:true,
           symbol:"circle",
-          symbolSize: isLowPerf ? 3 : 5,
+          symbolSize:4,
           connectNulls:true,
-          lineStyle:{width: isLowPerf ? 2 : 3, color:"rgba(255,255,255,0.85)"},
-          label: lineAllLabels(fmtInt, "s"),
-          data: master.map(x=>x.tc_s)
+          lineStyle:{width:2,color:"#ec4899"},
+          itemStyle:{color:"#ec4899"},
+          label:{
+            show:true,position:"top",distance:4,
+            color:"#e8eaed",fontSize:10,fontWeight:600,
+            formatter:p=>p.value==null?"":fmtInt(p.value)+"s"
+          },
+          data:data.map(x=>x.tc_s)
         }];
         return opt;
       }
     },
+    // Parado vs Funcionando
     {
-      title: `${src.name} • Parado vs Funcionando (h)`,
+      title: `${src.name} • Tempo Parado vs Funcionando`,
       option: () => {
-        const opt = baseOption(master);
-        opt.legend={top:6,textStyle:{color:"rgba(255,255,255,0.78)"}};
+        const opt = baseOption(data);
+        opt.legend={
+          top:8,
+          textStyle:{color:"#94a3b8",fontSize:12}
+        };
         opt.yAxis.min=0;
         opt.series=[
           {
             name:"Funcionando (h)",
             type:"bar",
             stack:"total",
-            barWidth:"55%",
-            itemStyle:{
-              borderRadius: isLowPerf ? [6,6,0,0] : [10,10,0,0],
-              color:"rgba(36,211,238,0.85)"
+            barWidth:"60%",
+            itemStyle:{borderRadius:[6,6,0,0],color:"#22c55e"},
+            label:{
+              show:true,position:"inside",
+              color:"#fff",fontSize:11,fontWeight:600,
+              formatter:p=>fmt1(p.value)+"h"
             },
-            label: stackInsideLabel(fmt1,"h"),
-            data: master.map(x=>x.func_h)
+            data:data.map(x=>x.func_h)
           },
           {
             name:"Parado (h)",
             type:"bar",
             stack:"total",
-            barWidth:"55%",
-            itemStyle:{
-              borderRadius: isLowPerf ? [6,6,0,0] : [10,10,0,0],
-              color:"rgba(255,99,132,0.72)"
+            itemStyle:{borderRadius:[6,6,0,0],color:"#ef4444"},
+            label:{
+              show:true,position:"inside",
+              color:"#fff",fontSize:11,fontWeight:600,
+              formatter:p=>fmt1(p.value)+"h"
             },
-            label: stackInsideLabel(fmt1,"h"),
-            data: master.map(x=>x.parado_h)
+            data:data.map(x=>x.parado_h)
           }
         ];
         return opt;
@@ -458,100 +559,153 @@ function buildFiveScreensForSource(sourceIndex){
 }
 
 /* =========================
-   PLAYER (N fontes x 5 telas)
+   PLAYER
 ========================= */
-let chart=null;
-let startT=0;
-let screenIdx=0;
-
-let DATA_BY_SOURCE = [];
 let SCREENS = [];
+let currentIndex = 0;
+let startTime = 0;
+let refreshTimer = null;
 
-function setHeader(){
-  if(!SCREENS.length) return; // ✅ PROTEÇÃO
-  const s = SCREENS[screenIdx];
-  elTitle.textContent = s.title;
-  elMeta.textContent = `${screenIdx+1}/${SCREENS.length} • ${SOURCES.length} links • ${LAST_DAYS} dias`;
+function showOverlay(text, subtext=""){
+  DOM.overlay.classList.remove("hidden");
+  DOM.overlay.querySelector(".overlay-text").textContent = text;
+  DOM.overlay.querySelector(".overlay-subtext").textContent = subtext;
+}
+
+function hideOverlay(){
+  DOM.overlay.classList.add("hidden");
+}
+
+function showError(msg){
+  DOM.overlay.classList.remove("hidden");
+  DOM.overlay.innerHTML = `
+    <div class="overlay-content">
+      <div class="error-icon">⚠️</div>
+      <div class="overlay-text">Erro ao carregar dados</div>
+      <div class="overlay-subtext" style="max-width:500px;margin:0 auto;line-height:1.5;">${msg}</div>
+      <div style="margin-top:20px;font-size:12px;color:#64748b;">
+        Verifique se as planilhas estão publicadas e acessíveis
+      </div>
+    </div>
+  `;
+}
+
+function showUpdateNotification(){
+  DOM.updateNotif.classList.add("show");
+  setTimeout(() => DOM.updateNotif.classList.remove("show"), 3000);
+}
+
+function updateHeader(){
+  if(!SCREENS.length) return;
+  const screen = SCREENS[currentIndex];
+  DOM.title.textContent = screen.title;
+  DOM.infoBadge.textContent = `${currentIndex+1}/${SCREENS.length}`;
 }
 
 function render(){
-  if(!SCREENS.length) return; // ✅ PROTEÇÃO
-  hideMsg();
-  setHeader();
-  chart.setOption(SCREENS[screenIdx].option(), true);
-  startT=performance.now();
+  if(!SCREENS.length) return;
+  hideOverlay();
+  updateHeader();
+  DOM.chart.setOption(SCREENS[currentIndex].option(), true);
+  startTime = performance.now();
 }
 
 function tick(now){
-  if(!SCREENS.length) return; // ✅ PROTEÇÃO
-  const remaining = INTERVAL_MS - (now - startT);
-  const frac = Math.max(0, Math.min(1, remaining / INTERVAL_MS));
-  elProg.style.transform = `scaleX(${frac})`;
-  if(remaining<=0){
-    screenIdx = (screenIdx+1) % SCREENS.length;
+  if(!SCREENS.length) return;
+  
+  const elapsed = now - startTime;
+  const remaining = CONFIG.slideInterval - elapsed;
+  const progress = Math.max(0, Math.min(1, remaining / CONFIG.slideInterval));
+  DOM.progress.style.transform = `scaleX(${progress})`;
+  
+  if(remaining <= 0){
+    currentIndex = (currentIndex + 1) % SCREENS.length;
     render();
   }
+  
   requestAnimationFrame(tick);
 }
 
 function next(){
-  if(!SCREENS.length) return; // ✅ PROTEÇÃO
-  screenIdx = (screenIdx+1) % SCREENS.length;
+  if(!SCREENS.length) return;
+  currentIndex = (currentIndex + 1) % SCREENS.length;
   render();
 }
+
 function prev(){
-  if(!SCREENS.length) return; // ✅ PROTEÇÃO
-  screenIdx = (screenIdx-1 + SCREENS.length) % SCREENS.length;
+  if(!SCREENS.length) return;
+  currentIndex = (currentIndex - 1 + SCREENS.length) % SCREENS.length;
   render();
 }
-document.getElementById("next").addEventListener("click", next);
-document.getElementById("prev").addEventListener("click", prev);
 
 /* =========================
-   BOOT
+   INICIALIZAÇÃO
 ========================= */
-(async ()=>{
-  try{
-    elTitle.textContent="Carregando dados (multi links)…";
-    elMeta.textContent="Aguarde";
-
-    DATA_BY_SOURCE = [];
-    for(let i=0;i<SOURCES.length;i++){
-      const m = await loadMasterFrom(SOURCES[i].csvUrl);
-      DATA_BY_SOURCE.push(m);
+async function loadAllData(){
+  const allData = [];
+  
+  for(let i=0; i<CONFIG.sources.length; i++){
+    showOverlay("Carregando dados...", `Fonte ${i+1}/${CONFIG.sources.length} - ${CONFIG.sources[i].name}`);
+    try {
+      const data = await loadData(CONFIG.sources[i].csvUrl);
+      allData.push(data);
+    } catch(err) {
+      console.error(`Erro ao carregar ${CONFIG.sources[i].name}:`, err);
+      throw new Error(`Falha em "${CONFIG.sources[i].name}": ${err.message}`);
     }
-
-    SCREENS = [];
-    for(let i=0;i<SOURCES.length;i++){
-      SCREENS.push(...buildFiveScreensForSource(i));
-    }
-
-    if(!SCREENS.length){
-      throw new Error("Nenhum dado carregado.");
-    }
-
-    chart = echarts.init(document.getElementById("chart"), null, {renderer:"canvas"});
-    window.addEventListener("resize", ()=>chart.resize());
-
-    render();
-    requestAnimationFrame(tick);
-
-    window.addEventListener("keydown", (e)=>{
-      if(e.key==="ArrowRight" || e.key===" " || e.key==="PageDown") next();
-      else if(e.key==="ArrowLeft" || e.key==="Backspace" || e.key==="PageUp") prev();
-    });
-
-  }catch(err){
-    showMsg(
-      "Erro ao carregar um ou mais links.\n\n" +
-      "Verifique se TODOS os links são CSV no formato /pub?…&output=csv\n" +
-      "e se a aba está publicada.\n\n" +
-      "Erro: " + err.message
-    );
-    elTitle.textContent="Erro";
-    elMeta.textContent="Confira os links";
   }
-})();
+  
+  return allData;
+}
+
+async function initialize(isRefresh = false){
+  try {
+    const allData = await loadAllData();
+    
+    SCREENS = [];
+    for(let i=0; i<CONFIG.sources.length; i++){
+      SCREENS.push(...createScreens(i, allData[i]));
+    }
+    
+    if(!SCREENS.length) throw new Error("Nenhum dado disponível");
+    
+    DOM.dataInfo.textContent = `${CONFIG.sources.length} fontes • ${CONFIG.lastDays} dias`;
+    
+    if(!DOM.chart){
+      DOM.chart = echarts.init(document.getElementById("chart"), null, {renderer:"canvas"});
+      window.addEventListener("resize", () => DOM.chart.resize());
+    }
+    
+    if(isRefresh){
+      showUpdateNotification();
+      render();
+    } else {
+      render();
+      requestAnimationFrame(tick);
+    }
+    
+    // Auto-refresh
+    if(refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(() => initialize(true), CONFIG.autoRefresh);
+    
+  } catch(err) {
+    console.error(err);
+    showError(err.message);
+    DOM.title.textContent = "Erro";
+    DOM.statusText.textContent = "Offline";
+  }
+}
+
+// Event listeners
+document.getElementById("next").addEventListener("click", next);
+document.getElementById("prev").addEventListener("click", prev);
+window.addEventListener("keydown", e => {
+  if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown") next();
+  else if(e.key==="ArrowLeft"||e.key==="Backspace"||e.key==="PageUp") prev();
+});
+
+// Start
+initialize();
 </script>
 </body>
 </html>
