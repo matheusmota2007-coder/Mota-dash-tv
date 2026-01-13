@@ -1,682 +1,359 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mota TV – Dashboards (Apps Script JSON)</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mota TV - Dashboards</title>
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;}
-    html,body{height:100%;background:#0a0e19;color:#e8eaed;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden;}
-    #app{position:fixed;inset:0;display:flex;flex-direction:column;}
-
-    #header{
-      padding:18px 22px;
-      background:linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.92) 100%);
-      backdrop-filter:blur(10px);
-      border-bottom:1px solid rgba(255,255,255,0.08);
-      box-shadow:0 4px 20px rgba(0,0,0,0.3);
-      display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    #logo{font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.8px;text-transform:uppercase;}
-    #title{margin-top:6px;font-size:22px;font-weight:900;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:75vw;}
-    #meta{font-size:12px;color:#94a3b8;white-space:nowrap;text-align:right;}
-    #meta .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,0.12);}
-    #meta.offline .dot{background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,0.14);}
-    #meta.partial .dot{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,0.14);}
-
-    #chartWrap{position:relative;flex:1;min-height:0;background:linear-gradient(180deg,#0f172a 0%,#1e293b 100%);}
-    #chart{position:absolute;inset:0;}
-
-    #progressWrap{height:3px;background:rgba(255,255,255,0.06);overflow:hidden;}
-    #progress{height:100%;width:100%;background:linear-gradient(90deg,#3b82f6,#8b5cf6,#ec4899);transform-origin:left;transform:scaleX(0);}
-
-    .nav-btn{
-      position:fixed;bottom:18px;width:54px;height:54px;border-radius:50%;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(15,23,42,0.85);
-      backdrop-filter:blur(8px);
-      color:#e8eaed;font-size:20px;
-      display:flex;align-items:center;justify-content:center;
-      cursor:pointer;z-index:50;box-shadow:0 6px 18px rgba(0,0,0,0.35);
-      user-select:none;
+    
+    body {
+      background: #0a0e19;
+      color: #e8eaed;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
     }
-    .nav-btn:active{transform:scale(0.98);}
-    #prev{left:18px;}
-    #next{right:18px;}
-
-    #badge{
-      position:fixed;top:18px;right:18px;
-      padding:7px 12px;border-radius:999px;
-      background:rgba(15,23,42,0.85);
-      border:1px solid rgba(255,255,255,0.10);
-      color:#cbd5e1;font-size:12px;z-index:50;
-      box-shadow:0 6px 16px rgba(0,0,0,0.25);
+    
+    #header {
+      background: #1e293b;
+      padding: 20px;
+      border-bottom: 2px solid #3b82f6;
     }
-
-    #overlay{
-      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-      background:rgba(10,14,25,0.92);backdrop-filter:blur(8px);
-      z-index:100;transition:opacity .25s;
+    
+    #title {
+      font-size: 28px;
+      font-weight: bold;
+      color: #fff;
+      margin-bottom: 5px;
     }
-    #overlay.hidden{opacity:0;pointer-events:none;}
-    .overlay-card{padding:22px 26px;text-align:center;max-width:640px;}
-    .spinner{
-      width:44px;height:44px;margin:0 auto 14px;border-radius:50%;
-      border:4px solid rgba(255,255,255,0.12);
-      border-top-color:#3b82f6;animation:spin .8s linear infinite;
+    
+    #status {
+      font-size: 14px;
+      color: #94a3b8;
     }
-    @keyframes spin{to{transform:rotate(360deg);}}
-    .overlay-title{font-size:15px;color:#e2e8f0;font-weight:800;margin-bottom:6px;}
-    .overlay-sub{font-size:12px;color:#94a3b8;line-height:1.5;}
-
-    @media (max-width:768px){
-      #title{font-size:18px;max-width:62vw;}
-      .nav-btn{width:48px;height:48px;bottom:14px;}
-      #prev{left:14px;} #next{right:14px;}
-      #badge{top:14px;right:14px;font-size:11px;padding:6px 10px;}
+    
+    #chart {
+      width: 100%;
+      height: calc(100vh - 140px);
+      padding: 20px;
+    }
+    
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 15px;
+      z-index: 100;
+    }
+    
+    .btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .btn:active {
+      background: #2563eb;
+    }
+    
+    #loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.9);
+      padding: 40px;
+      border-radius: 10px;
+      text-align: center;
+      z-index: 200;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #333;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none;
     }
   </style>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
 </head>
-
 <body>
-  <div id="app">
-    <div id="header">
-      <div>
-        <div id="logo">MOTA DASH TV</div>
-        <div id="title">Inicializando…</div>
-      </div>
-      <div id="meta"><span class="dot"></span><span id="metaText">Conectando…</span></div>
-    </div>
-
-    <div id="chartWrap">
-      <div id="chart"></div>
-      <div id="overlay">
-        <div class="overlay-card">
-          <div class="spinner"></div>
-          <div class="overlay-title" id="ovTitle">Carregando dashboards…</div>
-          <div class="overlay-sub" id="ovSub">Buscando dados nas planilhas</div>
-        </div>
-      </div>
-    </div>
-
-    <div id="progressWrap"><div id="progress"></div></div>
+  <div id="header">
+    <div id="title">Carregando...</div>
+    <div id="status">Inicializando sistema</div>
+  </div>
+  
+  <canvas id="chart"></canvas>
+  
+  <div id="controls">
+    <button class="btn" onclick="prevScreen()">◀ Anterior</button>
+    <button class="btn" onclick="nextScreen()">Próximo ▶</button>
+  </div>
+  
+  <div id="loading">
+    <div class="spinner"></div>
+    <div style="font-size: 18px; color: #fff;">Carregando dados...</div>
   </div>
 
-  <div class="nav-btn" id="prev">◀</div>
-  <div class="nav-btn" id="next">▶</div>
-  <div id="badge">0/0</div>
+  <script>
+    // ========== CONFIGURAÇÃO ==========
+    const CONFIG = {
+      apiUrl: "https://script.google.com/macros/s/AKfycbzbEO-JpjRMjJSf-xOlIU36EAKITXep3lZa5wzX_gb2DBauRdu8vdUpIknuQk-mF2SM/exec",
+      token: "90czL6LPhZ1gHHlaurPZ1xmHpxyOeBqwPYqQWa5Z9bOYddf1kc",
+      slideInterval: 35000,
+      autoRefresh: 300000
+    };
 
-<script>
-/* =========================
-   CONFIG (TV BOX FRIENDLY)
-   AJUSTE: coloque seu token aqui (obrigatório se a API exige token)
-========================= */
-const CONFIG = {
-  sources: [
-    {
-      name: "Fonte 1",
-      apiUrl: "https://script.google.com/macros/s/AKfycbzbEO-JpjRMjJSf-xOlIU36EAKITXep3lZa5wzX_gb2DBauRdu8vdUpIknuQk-mF2SM/exec"
-    },
-    {
-      name: "Fonte 2",
-      apiUrl: "https://script.google.com/macros/s/AKfycbzbEO-JpjRMjJSf-xOlIU36EAKITXep3lZa5wzX_gb2DBauRdu8vdUpIknuQk-mF2SM/exec"
+    // ========== VARIÁVEIS GLOBAIS ==========
+    let canvas = document.getElementById('chart');
+    let ctx = canvas.getContext('2d');
+    let screens = [];
+    let currentIndex = 0;
+    let allData = [];
+
+    // ========== FUNÇÕES DE DESENHO ==========
+    function resizeCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
     }
-  ],
-  token: "90czL6LPhZ1gHHlaurPZ1xmHpxyOeBqwPYqQWa5Z9bOYddf1kc", // <<< AJUSTE AQUI
-  lastDays: 20,
-  slideInterval: 35000,
-  autoRefresh: 300000,
-  fetchTimeoutMs: 8000,
-  animation: false,
-  showLabels: false,
-  showSymbols: true,
-  progressTickMs: 250
-};
 
-/* =========================
-   DOM
-========================= */
-const DOM = {
-  title: document.getElementById("title"),
-  meta: document.getElementById("meta"),
-  metaText: document.getElementById("metaText"),
-  badge: document.getElementById("badge"),
-  overlay: document.getElementById("overlay"),
-  ovTitle: document.getElementById("ovTitle"),
-  ovSub: document.getElementById("ovSub"),
-  progress: document.getElementById("progress"),
-  chartEl: document.getElementById("chart"),
-  chart: null
-};
-
-/* =========================
-   HELPERS (pt-BR parsing)
-   API retorna rows[][] (strings pt-BR). Precisamos converter.
-========================= */
-function fmtInt(n){ return (n==null || n==="") ? "" : Math.round(Number(n)).toLocaleString("pt-BR"); }
-function fmt1(n){ return (n==null || n==="") ? "" : (Math.round(Number(n)*10)/10).toLocaleString("pt-BR"); }
-function fmt2(n){ return (n==null || n==="") ? "" : (Math.round(Number(n)*100)/100).toLocaleString("pt-BR"); }
-
-function normKey(s){
-  return String(s||"").trim().toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^\w\s]/g," ").replace(/\s+/g," ").trim();
-}
-function idxOf(headers, name){
-  const h = headers.map(normKey);
-  return h.indexOf(normKey(name));
-}
-
-function parsePtNumber(v){
-  if(v==null) return null;
-  if(typeof v === "number") return Number.isFinite(v) ? v : null;
-  let s = String(v).trim();
-  if(!s) return null;
-  // remove separador milhar ".", troca decimal "," -> "."
-  s = s.replace(/\./g,"").replace(",",".");
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
-function parsePercent(v){
-  if(v==null) return null;
-  let s = String(v).trim();
-  if(!s) return null;
-  s = s.replace("%","").trim();
-  return parsePtNumber(s); // retorna 0..100
-}
-function parseHMS(v){
-  if(v==null) return null;
-  const s = String(v).trim();
-  const m = s.match(/^(\d{1,3}):(\d{2}):(\d{2})$/);
-  if(!m) return null;
-  return (+m[1])*3600 + (+m[2])*60 + (+m[3]); // segundos
-}
-function labelFromDateBR(d){
-  // "13/01/2026" -> "13/01"
-  const s = String(d||"").trim();
-  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  return m ? `${m[1]}/${m[2]}` : s;
-}
-
-function showOverlay(t, s=""){
-  DOM.ovTitle.textContent = t;
-  DOM.ovSub.textContent = s;
-  DOM.overlay.classList.remove("hidden");
-}
-function hideOverlay(){ DOM.overlay.classList.add("hidden"); }
-
-function setStatus(kind, text){
-  DOM.meta.classList.remove("offline","partial");
-  if(kind==="offline") DOM.meta.classList.add("offline");
-  if(kind==="partial") DOM.meta.classList.add("partial");
-  DOM.metaText.textContent = text;
-}
-
-/* =========================
-   FETCH JSON (Apps Script)
-========================= */
-async function fetchJson(url){
-  const controller = new AbortController();
-  const to = setTimeout(() => controller.abort(), CONFIG.fetchTimeoutMs);
-
-  try{
-    const u = new URL(url);
-    if(CONFIG.token) u.searchParams.set("token", CONFIG.token);
-    // A sua API "simplificada" retorna tudo sem precisar days, mas manter não atrapalha
-    u.searchParams.set("days", String(CONFIG.lastDays));
-    u.searchParams.set("_", String(Date.now()));
-
-    const resp = await fetch(u.toString(), {
-      cache: "no-store",
-      signal: controller.signal,
-      headers: { "Accept": "application/json,text/plain,*/*" }
-    });
-    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const json = await resp.json();
-
-    if(json && json.ok === false) throw new Error(json.error || "API error");
-    if(!json || !Array.isArray(json.rows) || !Array.isArray(json.headers)) {
-      throw new Error("Formato inválido: precisa headers[] e rows[][]");
+    function drawBarChart(labels, values, title, color, suffix = '') {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const padding = 60;
+      const chartWidth = canvas.width - padding * 2;
+      const chartHeight = canvas.height - padding * 2;
+      const barWidth = chartWidth / labels.length - 10;
+      
+      const maxValue = Math.max(...values.filter(v => v !== null)) || 100;
+      
+      // Título
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(title, canvas.width / 2, 30);
+      
+      // Barras
+      labels.forEach((label, i) => {
+        const value = values[i];
+        if (value === null) return;
+        
+        const x = padding + i * (barWidth + 10);
+        const barHeight = (value / maxValue) * chartHeight;
+        const y = canvas.height - padding - barHeight;
+        
+        // Desenha barra
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, barWidth, barHeight);
+        
+        // Valor em cima
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(value.toFixed(1) + suffix, x + barWidth / 2, y - 5);
+        
+        // Label embaixo
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px Arial';
+        ctx.fillText(label, x + barWidth / 2, canvas.height - padding + 20);
+      });
     }
-    return json;
-  } finally {
-    clearTimeout(to);
-  }
-}
 
-/* =========================
-   TRANSFORM: payload -> rows[{label, util, ef5, pecas, tc_s, func_h, parado_h}]
-   IMPORTANTE: sua API retorna rows[][], não rows de objetos.
-========================= */
-function transformApiPayload(payload){
-  const headers = payload.headers;
-  const rows = payload.rows;
-
-  const cData = idxOf(headers, "data");
-  const cUtil = idxOf(headers, "utilização de Maquina");
-  const cEf5  = idxOf(headers, "Eficiencia -5 dias média");
-  const cPcs  = idxOf(headers, "Peças Fabric.");
-  const cTc   = idxOf(headers, "TC MEDIO");
-  const cFunc = idxOf(headers, "Funcionando");
-  const cPar  = idxOf(headers, "Parado");
-
-  if(cData < 0) throw new Error("Coluna 'data' não encontrada em headers[]");
-  // demais colunas podem não existir em algumas planilhas; nesse caso vão virar null
-
-  const out = [];
-  for(const r of rows){
-    const dateBr = (cData>=0) ? r[cData] : "";
-    const label = labelFromDateBR(dateBr);
-
-    const util = (cUtil>=0) ? parsePercent(r[cUtil]) : null;
-    const ef5  = (cEf5>=0)  ? parsePercent(r[cEf5])  : null;
-    const pecas = (cPcs>=0) ? parsePtNumber(r[cPcs]) : null;
-
-    const tc_s = (cTc>=0) ? parseHMS(r[cTc]) : null;
-
-    const func_s = (cFunc>=0) ? parseHMS(r[cFunc]) : null;
-    const par_s  = (cPar>=0)  ? parseHMS(r[cPar])  : null;
-
-    out.push({
-      label,
-      util,
-      ef5,
-      pecas,
-      tc_s,
-      func_h: func_s==null ? null : (func_s/3600),
-      parado_h: par_s==null ? null : (par_s/3600)
-    });
-  }
-
-  // sua API já está retornando do mais recente pro mais antigo (como no exemplo).
-  // para o gráfico ficar "antigo -> novo" no eixo, inverta:
-  const sliced = out.slice(0, CONFIG.lastDays).reverse();
-
-  // arredonda horas (evita tooltip feio)
-  for(const x of sliced){
-    if(x.func_h!=null) x.func_h = Math.round(x.func_h*100)/100;
-    if(x.parado_h!=null) x.parado_h = Math.round(x.parado_h*100)/100;
-    if(x.util!=null) x.util = Math.round(x.util*100)/100;
-    if(x.ef5!=null) x.ef5 = Math.round(x.ef5*100)/100;
-  }
-  return sliced;
-}
-
-/* =========================
-   ECHARTS OPTIONS
-========================= */
-function baseOption(labels){
-  return {
-    backgroundColor:"transparent",
-    animation: CONFIG.animation,
-    textStyle:{color:"#e8eaed",fontFamily:"inherit"},
-    grid:{left:62,right:24,top:54,bottom:50},
-    tooltip:{
-      trigger:"axis",
-      backgroundColor:"rgba(15,23,42,0.95)",
-      borderColor:"rgba(59,130,246,0.30)",
-      borderWidth:1,
-      textStyle:{color:"#fff"},
-      axisPointer:{type:"line",lineStyle:{color:"rgba(59,130,246,0.35)",width:1}}
-    },
-    xAxis:{
-      type:"category",
-      data: labels,
-      axisLine:{lineStyle:{color:"rgba(255,255,255,0.10)"}},
-      axisTick:{show:false},
-      axisLabel:{color:"rgba(148,163,184,0.95)",fontSize:11}
-    },
-    yAxis:{
-      type:"value",
-      axisLine:{show:false},
-      axisTick:{show:false},
-      axisLabel:{color:"rgba(148,163,184,0.95)",fontSize:11},
-      splitLine:{lineStyle:{color:"rgba(255,255,255,0.05)",width:1}}
-    }
-  };
-}
-
-function makeScreens(sourceName, rows){
-  const labels = rows.map(r => r.label || "");
-  return [
-    {
-      title: `${sourceName} • Utilização`,
-      option: () => {
-        const opt = baseOption(labels);
-        opt.yAxis.min = 0; opt.yAxis.max = 100;
-        opt.series = [{
-          name:"Utilização (%)",
-          type:"line",
-          smooth:false,
-          showSymbol: CONFIG.showSymbols,
-          symbol:"circle",
-          symbolSize:4,
-          connectNulls:true,
-          lineStyle:{width:2,color:"#3b82f6"},
-          itemStyle:{color:"#3b82f6"},
-          areaStyle:{color:{type:"linear",x:0,y:0,x2:0,y2:1,colorStops:[
-            {offset:0,color:"rgba(59,130,246,0.18)"},
-            {offset:1,color:"rgba(59,130,246,0.02)"}
-          ]}},
-          label:{
-            show: CONFIG.showLabels,
-            position:"top",distance:4,
-            color:"#e8eaed",fontSize:10,fontWeight:700,
-            formatter:p=>p.value==null?"":fmt2(p.value)+"%"
-          },
-          data: rows.map(r => (r.util ?? null))
-        }];
-        return opt;
-      }
-    },
-    {
-      title: `${sourceName} • Eficiência (5 dias)`,
-      option: () => {
-        const opt = baseOption(labels);
-        opt.yAxis.min = 0; opt.yAxis.max = 100;
-        opt.series = [{
-          name:"Eficiência (%)",
-          type:"line",
-          smooth:false,
-          showSymbol: CONFIG.showSymbols,
-          symbol:"circle",
-          symbolSize:4,
-          connectNulls:true,
-          lineStyle:{width:2,color:"#8b5cf6"},
-          itemStyle:{color:"#8b5cf6"},
-          areaStyle:{color:{type:"linear",x:0,y:0,x2:0,y2:1,colorStops:[
-            {offset:0,color:"rgba(139,92,246,0.18)"},
-            {offset:1,color:"rgba(139,92,246,0.02)"}
-          ]}},
-          label:{
-            show: CONFIG.showLabels,
-            position:"top",distance:4,
-            color:"#e8eaed",fontSize:10,fontWeight:700,
-            formatter:p=>p.value==null?"":fmt2(p.value)+"%"
-          },
-          data: rows.map(r => (r.ef5 ?? null))
-        }];
-        return opt;
-      }
-    },
-    {
-      title: `${sourceName} • Produção Diária`,
-      option: () => {
-        const opt = baseOption(labels);
-        opt.series = [{
-          name:"Peças",
-          type:"bar",
-          barWidth:"60%",
-          itemStyle:{
-            borderRadius:[6,6,0,0],
-            color:{type:"linear",x:0,y:0,x2:0,y2:1,colorStops:[
-              {offset:0,color:"#3b82f6"},
-              {offset:1,color:"rgba(59,130,246,0.55)"}
-            ]}
-          },
-          label:{
-            show: CONFIG.showLabels,
-            position:"top",
-            color:"#e8eaed",fontSize:11,fontWeight:800,
-            formatter:p=>fmtInt(p.value)
-          },
-          data: rows.map(r => (r.pecas ?? null))
-        }];
-        return opt;
-      }
-    },
-    {
-      title: `${sourceName} • Tempo de Ciclo Médio`,
-      option: () => {
-        const opt = baseOption(labels);
-        opt.series = [{
-          name:"TC médio (s)",
-          type:"line",
-          smooth:false,
-          showSymbol: CONFIG.showSymbols,
-          symbol:"circle",
-          symbolSize:4,
-          connectNulls:true,
-          lineStyle:{width:2,color:"#ec4899"},
-          itemStyle:{color:"#ec4899"},
-          label:{
-            show: CONFIG.showLabels,
-            position:"top",distance:4,
-            color:"#e8eaed",fontSize:10,fontWeight:700,
-            formatter:p=>p.value==null?"":fmtInt(p.value)+"s"
-          },
-          data: rows.map(r => (r.tc_s ?? null))
-        }];
-        return opt;
-      }
-    },
-    {
-      title: `${sourceName} • Parado vs Funcionando`,
-      option: () => {
-        const opt = baseOption(labels);
-        opt.legend = { top: 10, textStyle:{color:"#94a3b8",fontSize:12} };
-        opt.yAxis.min = 0;
-        opt.series = [
-          {
-            name:"Funcionando (h)",
-            type:"bar",
-            stack:"total",
-            barWidth:"60%",
-            itemStyle:{borderRadius:[6,6,0,0],color:"#22c55e"},
-            label:{
-              show: CONFIG.showLabels,
-              position:"inside",
-              color:"#fff",fontSize:11,fontWeight:800,
-              formatter:p=>p.value==null?"":fmt1(p.value)+"h"
-            },
-            data: rows.map(r => (r.func_h ?? null))
-          },
-          {
-            name:"Parado (h)",
-            type:"bar",
-            stack:"total",
-            itemStyle:{borderRadius:[6,6,0,0],color:"#ef4444"},
-            label:{
-              show: CONFIG.showLabels,
-              position:"inside",
-              color:"#fff",fontSize:11,fontWeight:800,
-              formatter:p=>p.value==null?"":fmt1(p.value)+"h"
-            },
-            data: rows.map(r => (r.parado_h ?? null))
-          }
-        ];
-        return opt;
-      }
-    }
-  ];
-}
-
-/* =========================
-   PLAYER
-========================= */
-let SCREENS = [];
-let currentIndex = 0;
-let slideStart = Date.now();
-let progressTimer = null;
-let slideTimer = null;
-let refreshTimer = null;
-
-function updateHeader(){
-  if(!SCREENS.length) return;
-  DOM.title.textContent = SCREENS[currentIndex].title;
-  DOM.badge.textContent = `${currentIndex+1}/${SCREENS.length}`;
-}
-
-function renderCurrent(){
-  if(!SCREENS.length) return;
-  hideOverlay();
-  updateHeader();
-  DOM.chart.setOption(SCREENS[currentIndex].option(), true);
-  slideStart = Date.now();
-}
-
-function next(){
-  if(!SCREENS.length) return;
-  currentIndex = (currentIndex + 1) % SCREENS.length;
-  renderCurrent();
-}
-function prev(){
-  if(!SCREENS.length) return;
-  currentIndex = (currentIndex - 1 + SCREENS.length) % SCREENS.length;
-  renderCurrent();
-}
-
-function startProgressLoop(){
-  if(progressTimer) clearInterval(progressTimer);
-  progressTimer = setInterval(() => {
-    if(!SCREENS.length) return;
-    const elapsed = Date.now() - slideStart;
-    const p = Math.max(0, Math.min(1, elapsed / CONFIG.slideInterval));
-    DOM.progress.style.transform = `scaleX(${p})`;
-  }, CONFIG.progressTickMs);
-}
-
-function startSlideLoop(){
-  if(slideTimer) clearInterval(slideTimer);
-  slideTimer = setInterval(() => {
-    if(!SCREENS.length) return;
-    const elapsed = Date.now() - slideStart;
-    if(elapsed >= CONFIG.slideInterval) next();
-  }, 250);
-}
-
-/* =========================
-   DATA LOAD + FALLBACK
-========================= */
-function cacheKeyFor(i){ return `mota_tv_api_cache_v2_${i}`; }
-
-async function loadAllSources(){
-  showOverlay("Carregando dados…", "Conectando nos Apps Scripts");
-  setStatus("partial","Buscando dados…");
-
-  const results = await Promise.all(CONFIG.sources.map((s, i) =>
-    fetchJson(s.apiUrl).then(
-      json => ({ ok:true, json, i }),
-      err => ({ ok:false, err, i })
-    )
-  ));
-
-  let okCount = 0;
-  const allSeries = [];
-
-  for(const r of results){
-    if(r.ok){
-      okCount++;
-      const series = transformApiPayload(r.json);
-      allSeries[r.i] = series;
-      try{ localStorage.setItem(cacheKeyFor(r.i), JSON.stringify(r.json)); }catch(_){}
-    } else {
-      let cached = null;
-      try{
-        const raw = localStorage.getItem(cacheKeyFor(r.i));
-        if(raw) cached = JSON.parse(raw);
-      }catch(_){}
-      if(cached && Array.isArray(cached.rows) && Array.isArray(cached.headers)){
-        try{
-          allSeries[r.i] = transformApiPayload(cached);
-        }catch(_){
-          allSeries[r.i] = [];
+    function drawLineChart(labels, values, title, color, suffix = '') {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const padding = 60;
+      const chartWidth = canvas.width - padding * 2;
+      const chartHeight = canvas.height - padding * 2;
+      
+      const maxValue = Math.max(...values.filter(v => v !== null)) || 100;
+      const minValue = Math.min(...values.filter(v => v !== null)) || 0;
+      const range = maxValue - minValue || 1;
+      
+      // Título
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(title, canvas.width / 2, 30);
+      
+      // Linha
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      
+      let firstPoint = true;
+      labels.forEach((label, i) => {
+        const value = values[i];
+        if (value === null) return;
+        
+        const x = padding + (i / (labels.length - 1)) * chartWidth;
+        const y = canvas.height - padding - ((value - minValue) / range) * chartHeight;
+        
+        if (firstPoint) {
+          ctx.moveTo(x, y);
+          firstPoint = false;
+        } else {
+          ctx.lineTo(x, y);
         }
-      } else {
-        allSeries[r.i] = [];
+        
+        // Ponto
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Valor
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(value.toFixed(1) + suffix, x, y - 15);
+        
+        // Label
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '12px Arial';
+        ctx.fillText(label, x, canvas.height - padding + 20);
+      });
+      
+      ctx.stroke();
+    }
+
+    // ========== PROCESSAMENTO DE DADOS ==========
+    function parseData(json) {
+      const headers = json.headers || [];
+      const rows = json.rows || [];
+      
+      const result = [];
+      
+      rows.forEach(row => {
+        const obj = {};
+        headers.forEach((h, i) => {
+          obj[h] = row[i];
+        });
+        
+        result.push({
+          label: obj.data ? obj.data.substring(0, 5) : '',
+          util: parseFloat(String(obj['Utilização de Maquina'] || '0').replace('%', '').replace(',', '.')) || null,
+          pecas: parseFloat(String(obj['Peças Fabric.'] || '0').replace('.', '').replace(',', '.')) || null
+        });
+      });
+      
+      return result;
+    }
+
+    function createScreens(data) {
+      const labels = data.map(d => d.label);
+      const utilData = data.map(d => d.util);
+      const pecasData = data.map(d => d.pecas);
+      
+      return [
+        {
+          title: 'Utilização de Máquina',
+          draw: () => drawLineChart(labels, utilData, 'Utilização de Máquina (%)', '#3b82f6', '%')
+        },
+        {
+          title: 'Produção Diária',
+          draw: () => drawBarChart(labels, pecasData, 'Peças Fabricadas', '#22c55e', '')
+        }
+      ];
+    }
+
+    // ========== NAVEGAÇÃO ==========
+    function showScreen(index) {
+      if (screens.length === 0) return;
+      
+      currentIndex = index;
+      const screen = screens[currentIndex];
+      
+      document.getElementById('title').textContent = screen.title;
+      document.getElementById('status').textContent = `Tela ${currentIndex + 1} de ${screens.length}`;
+      
+      resizeCanvas();
+      screen.draw();
+    }
+
+    function nextScreen() {
+      currentIndex = (currentIndex + 1) % screens.length;
+      showScreen(currentIndex);
+    }
+
+    function prevScreen() {
+      currentIndex = (currentIndex - 1 + screens.length) % screens.length;
+      showScreen(currentIndex);
+    }
+
+    // ========== CARREGAMENTO ==========
+    async function loadData() {
+      try {
+        const url = `${CONFIG.apiUrl}?token=${CONFIG.token}&_=${Date.now()}`;
+        const response = await fetch(url);
+        const json = await response.json();
+        
+        allData = parseData(json);
+        screens = createScreens(allData);
+        
+        document.getElementById('loading').classList.add('hidden');
+        showScreen(0);
+        
+        // Auto-avançar
+        setInterval(nextScreen, CONFIG.slideInterval);
+        
+        // Auto-refresh
+        setInterval(loadData, CONFIG.autoRefresh);
+        
+      } catch (error) {
+        document.getElementById('loading').innerHTML = 
+          '<div style="color:#ef4444; font-size:18px;">Erro ao carregar dados<br><small>' + 
+          error.message + '</small></div>';
       }
     }
-  }
 
-  const when = new Date().toLocaleString("pt-BR");
-  if(okCount === CONFIG.sources.length){
-    setStatus("good", `Ao vivo • ${when}`);
-  } else if(okCount > 0){
-    setStatus("partial", `Parcial (${okCount}/${CONFIG.sources.length}) • ${when}`);
-  } else {
-    setStatus("offline", `Offline • ${when}`);
-  }
-
-  return { allSeries, okCount };
-}
-
-/* =========================
-   INIT
-========================= */
-function ensureChart(){
-  if(DOM.chart) return;
-  DOM.chart = echarts.init(DOM.chartEl, null, { renderer: "canvas" });
-  window.addEventListener("resize", () => DOM.chart && DOM.chart.resize());
-}
-
-async function buildScreensAndStart(isRefresh=false){
-  ensureChart();
-
-  const { allSeries } = await loadAllSources();
-
-  const screens = [];
-  for(let i=0; i<CONFIG.sources.length; i++){
-    const srcName = CONFIG.sources[i].name;
-    const seriesRows = (allSeries[i] || []);
-    if(seriesRows.length){
-      screens.push(...makeScreens(srcName, seriesRows));
-    }
-  }
-
-  if(!screens.length){
-    showOverlay("Sem dados para exibir", "Verifique se a API retorna headers[] e rows[][]");
-    DOM.title.textContent = "Sem dados";
-    DOM.badge.textContent = "0/0";
-    return;
-  }
-
-  SCREENS = screens;
-  if(currentIndex >= SCREENS.length) currentIndex = 0;
-
-  renderCurrent();
-  startProgressLoop();
-  startSlideLoop();
-
-  if(refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(() => {
-    buildScreensAndStart(true).catch(err => {
-      showOverlay("Erro ao atualizar", String(err?.message || err));
-      setStatus("offline","Erro ao atualizar");
+    // ========== INICIALIZAÇÃO ==========
+    window.addEventListener('resize', () => {
+      if (screens.length > 0) {
+        showScreen(currentIndex);
+      }
     });
-  }, CONFIG.autoRefresh);
-}
 
-document.getElementById("next").addEventListener("click", next);
-document.getElementById("prev").addEventListener("click", prev);
+    // Suporte a toque (swipe)
+    let touchStartX = 0;
+    canvas.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    });
+    
+    canvas.addEventListener('touchend', (e) => {
+      const touchEndX = e.changedTouches[0].clientX;
+      const diff = touchStartX - touchEndX;
+      
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) nextScreen();
+        else prevScreen();
+      }
+    });
 
-window.addEventListener("keydown", (e) => {
-  if(e.key==="ArrowRight" || e.key===" " || e.key==="PageDown") next();
-  if(e.key==="ArrowLeft"  || e.key==="Backspace" || e.key==="PageUp") prev();
-  if(e.key.toLowerCase()==="r") buildScreensAndStart(true).catch(()=>{});
-});
-
-let touchX = null;
-window.addEventListener("touchstart", (e)=>{ touchX = e.touches?.[0]?.clientX ?? null; }, {passive:true});
-window.addEventListener("touchend", (e)=>{
-  if(touchX==null) return;
-  const endX = e.changedTouches?.[0]?.clientX ?? null;
-  if(endX==null) return;
-  const dx = endX - touchX;
-  if(Math.abs(dx) > 40){
-    if(dx < 0) next(); else prev();
-  }
-  touchX = null;
-}, {passive:true});
-
-// Start
-buildScreensAndStart(false).catch(err => {
-  showOverlay("Erro ao iniciar", String(err?.message || err));
-  setStatus("offline","Erro ao iniciar");
-});
-</script>
+    // Inicia
+    resizeCanvas();
+    loadData();
+  </script>
 </body>
 </html>
-
