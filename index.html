@@ -10,7 +10,6 @@
       padding: 0;
       box-sizing: border-box;
     }
- 
     
     body {
       background: #0a0e19;
@@ -239,7 +238,98 @@
       ctx.stroke();
     }
 
+    function drawStackedBarChart(labels, values1, values2, title, color1, color2, label1, label2) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const padding = 60;
+      const chartWidth = canvas.width - padding * 2;
+      const chartHeight = canvas.height - padding * 2;
+      const barWidth = chartWidth / labels.length - 10;
+      
+      const maxValues = [];
+      for (let i = 0; i < labels.length; i++) {
+        const v1 = values1[i] || 0;
+        const v2 = values2[i] || 0;
+        maxValues.push(v1 + v2);
+      }
+      const maxValue = Math.max(...maxValues) || 24;
+      
+      // Título
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(title, canvas.width / 2, 30);
+      
+      // Legenda
+      ctx.font = '16px Arial';
+      const legendY = 50;
+      ctx.fillStyle = color1;
+      ctx.fillRect(canvas.width / 2 - 150, legendY, 20, 20);
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'left';
+      ctx.fillText(label1, canvas.width / 2 - 125, legendY + 15);
+      
+      ctx.fillStyle = color2;
+      ctx.fillRect(canvas.width / 2 + 20, legendY, 20, 20);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(label2, canvas.width / 2 + 45, legendY + 15);
+      
+      // Barras empilhadas
+      labels.forEach((label, i) => {
+        const val1 = values1[i] || 0;
+        const val2 = values2[i] || 0;
+        
+        const x = padding + i * (barWidth + 10);
+        
+        // Barra 1 (funcionando - embaixo)
+        const height1 = (val1 / maxValue) * chartHeight;
+        const y1 = canvas.height - padding - height1;
+        
+        ctx.fillStyle = color1;
+        ctx.fillRect(x, y1, barWidth, height1);
+        
+        // Valor dentro da barra 1
+        if (height1 > 25) {
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 14px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(val1.toFixed(1) + 'h', x + barWidth / 2, y1 + height1 / 2 + 5);
+        }
+        
+        // Barra 2 (parado - em cima)
+        const height2 = (val2 / maxValue) * chartHeight;
+        const y2 = y1 - height2;
+        
+        ctx.fillStyle = color2;
+        ctx.fillRect(x, y2, barWidth, height2);
+        
+        // Valor dentro da barra 2
+        if (height2 > 25) {
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 14px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(val2.toFixed(1) + 'h', x + barWidth / 2, y2 + height2 / 2 + 5);
+        }
+        
+        // Label embaixo
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x + barWidth / 2, canvas.height - padding + 20);
+      });
+    }
+
     // ========== PROCESSAMENTO DE DADOS ==========
+    function parseHMS(value) {
+      if (!value) return 0;
+      const parts = String(value).split(':');
+      if (parts.length !== 3) return 0;
+      const hours = parseInt(parts[0]) || 0;
+      const minutes = parseInt(parts[1]) || 0;
+      const seconds = parseInt(parts[2]) || 0;
+      return hours + minutes / 60 + seconds / 3600;
+    }
+
     function parseData(json) {
       const headers = json.headers || [];
       const rows = json.rows || [];
@@ -255,7 +345,9 @@
         result.push({
           label: obj.data ? obj.data.substring(0, 5) : '',
           util: parseFloat(String(obj['Utilização de Maquina'] || '0').replace('%', '').replace(',', '.')) || null,
-          pecas: parseFloat(String(obj['Peças Fabric.'] || '0').replace('.', '').replace(',', '.')) || null
+          pecas: parseFloat(String(obj['Peças Fabric.'] || '0').replace('.', '').replace(',', '.')) || null,
+          funcionando: parseHMS(obj['Funcionando']),
+          parado: parseHMS(obj['Parado'])
         });
       });
       
@@ -266,6 +358,8 @@
       const labels = data.map(d => d.label);
       const utilData = data.map(d => d.util);
       const pecasData = data.map(d => d.pecas);
+      const funcionandoData = data.map(d => d.funcionando);
+      const paradoData = data.map(d => d.parado);
       
       return [
         {
@@ -275,6 +369,10 @@
         {
           title: 'Produção Diária',
           draw: () => drawBarChart(labels, pecasData, 'Peças Fabricadas', '#22c55e', '')
+        },
+        {
+          title: 'Horas de Funcionamento / Parado',
+          draw: () => drawStackedBarChart(labels, funcionandoData, paradoData, 'Horas de Funcionamento / Parado', '#22c55e', '#ef4444', 'Funcionando', 'Parado')
         }
       ];
     }
@@ -358,5 +456,3 @@
   </script>
 </body>
 </html>
-
-
