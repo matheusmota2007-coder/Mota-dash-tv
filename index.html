@@ -338,7 +338,8 @@ async function loadData(csvUrl, retries = 3){
       }
 
       data.sort((a,b) => a.date.getTime() - b.date.getTime());
-      return data.slice(-CONFIG.lastDays);
+      const sliced = data.slice(-CONFIG.lastDays);
+      return sliced.reverse(); // ✅ Inverte: mais recente à esquerda
       
     } catch(err) {
       console.warn(`Tentativa ${attempt}/${retries} falhou:`, err.message);
