@@ -397,18 +397,27 @@
     // ========== CARREGAMENTO ==========
     async function loadData() {
       try {
+        console.log('Iniciando carregamento...');
         const url = ${CONFIG.apiUrl}?token=${CONFIG.token}&_=${Date.now()};
+        console.log('URL:', url);
+        
         const response = await fetch(url);
+        console.log('Response status:', response.status);
+        
         const json = await response.json();
+        console.log('JSON recebido:', json);
         
         allData = parseData(json);
+        console.log('Dados processados:', allData);
         
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('status').textContent = Última atualização: ${new Date().toLocaleTimeString('pt-BR')};
         
         drawAllCharts(allData);
+        console.log('Gráficos desenhados!');
         
       } catch (error) {
+        console.error('Erro detalhado:', error);
         document.getElementById('loading').innerHTML = 
           '<div style="color:#ef4444; font-size:18px;">Erro ao carregar dados<br><small>' + 
           error.message + '</small></div>';
