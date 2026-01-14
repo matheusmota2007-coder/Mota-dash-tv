@@ -410,17 +410,26 @@
               obj[h] = row[i];
             });
             
-            const pecas = parseFloat(String(obj['Peças Fabric.'] || '0').replace(/\./g, '').replace(',', '.')) || 0;
+            // Parse de peças
+            let pecasStr = String(obj['Peças Fabric.'] || '0');
+            pecasStr = pecasStr.replace(/\./g, '').replace(',', '.');
+            const pecas = parseFloat(pecasStr) || 0;
+            
             const funcionando = parseHMS(obj['Funcionando']);
             
             // Calcular TC Médio (Tempo de Ciclo) com proteção
             let tcMedio = null;
             if (pecas > 0 && funcionando > 0 && isFinite(pecas) && isFinite(funcionando)) {
-              tcMedio = (funcionando * 60) / pecas; // tempo em minutos por peça
-              if (!isFinite(tcMedio)) tcMedio = null;
+              tcMedio = (funcionando * 60) / pecas;
+              if (!isFinite(tcMedio)) {
+                tcMedio = null;
+              }
             }
             
-            const util = parseFloat(String(obj['Utilização de Maquina'] || '0').replace('%', '').replace(',', '.'));
+            // Parse de utilização
+            let utilStr = String(obj['Utilização de Maquina'] || '0');
+            utilStr = utilStr.replace('%', '').replace(',', '.');
+            const util = parseFloat(utilStr);
             
             result.push({
               label: obj.data ? obj.data.substring(0, 5) : '',
