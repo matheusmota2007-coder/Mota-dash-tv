@@ -5,99 +5,125 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mota TV - Dashboards</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body{
+      background:#0a0e19;
+      color:#e8eaed;
+      font-family:Arial,sans-serif;
+      overflow:hidden;
     }
 
+    #header{
+      background:#1e293b;
+      padding:20px;
+      border-bottom:2px solid #3b82f6;
+    }
 
-  
-    
-    body {
-      background: #0a0e19;
-      color: #e8eaed;
-      font-family: Arial, sans-serif;
-      overflow: hidden;
+    #title{
+      font-size:28px;
+      font-weight:bold;
+      color:#fff;
+      margin-bottom:5px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
-    
-    #header {
-      background: #1e293b;
-      padding: 20px;
-      border-bottom: 2px solid #3b82f6;
+
+    #status{
+      font-size:14px;
+      color:#94a3b8;
     }
-    
-    #title {
-      font-size: 28px;
-      font-weight: bold;
-      color: #fff;
-      margin-bottom: 5px;
+
+    /* ======= MODO CARROSSEL (1 gráfico) ======= */
+    #chart{
+      width:100%;
+      height:calc(100vh - 140px);
+      padding:20px;
+      display:block;
     }
-    
-    #status {
-      font-size: 14px;
-      color: #94a3b8;
+
+    /* ======= MODO GRADE (4 gráficos) ======= */
+    #gridWrap{
+      width:100%;
+      height:calc(100vh - 140px);
+      padding:14px;
+      display:none;            /* liga no JS quando view="grid" */
+      gap:14px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      grid-template-rows:1fr 1fr;
     }
-    
-    #chart {
-      width: 100%;
-      height: calc(100vh - 140px);
-      padding: 20px;
+
+    .tile{
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(59,130,246,0.22);
+      border-radius:12px;
+      overflow:hidden;
+      position:relative;
+      padding:10px;
     }
-    
-    #controls {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 15px;
-      z-index: 100;
+
+    .tile canvas{
+      width:100%;
+      height:100%;
+      display:block;
     }
-    
-    .btn {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      font-size: 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
+
+    #controls{
+      position:fixed;
+      bottom:20px;
+      left:50%;
+      transform:translateX(-50%);
+      display:flex;
+      gap:15px;
+      z-index:100;
     }
-    
-    .btn:active {
-      background: #2563eb;
+
+    .btn{
+      background:#3b82f6;
+      color:#fff;
+      border:none;
+      padding:15px 30px;
+      font-size:18px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:bold;
     }
-    
-    #loading {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.9);
-      padding: 40px;
-      border-radius: 10px;
-      text-align: center;
-      z-index: 200;
+    .btn:active{ background:#2563eb; }
+
+    #loading{
+      position:fixed;
+      top:50%;
+      left:50%;
+      transform:translate(-50%, -50%);
+      background:rgba(0,0,0,0.9);
+      padding:40px;
+      border-radius:10px;
+      text-align:center;
+      z-index:200;
+      min-width:260px;
     }
-    
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid #333;
-      border-top-color: #3b82f6;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
+
+    .spinner{
+      width:50px;
+      height:50px;
+      border:5px solid #333;
+      border-top-color:#3b82f6;
+      border-radius:50%;
+      animation:spin 1s linear infinite;
+      margin:0 auto 20px;
     }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .hidden {
-      display: none;
+
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .hidden{ display:none !important; }
+
+    @media (max-width: 900px){
+      #gridWrap{
+        grid-template-columns:1fr;
+        grid-template-rows:1fr 1fr 1fr 1fr;
+      }
     }
   </style>
 </head>
@@ -106,17 +132,26 @@
     <div id="title">Carregando...</div>
     <div id="status">Inicializando sistema</div>
   </div>
-  
+
+  <!-- MODO 1 GRÁFICO -->
   <canvas id="chart"></canvas>
-  
+
+  <!-- MODO 4 GRÁFICOS -->
+  <div id="gridWrap">
+    <div class="tile"><canvas id="c1"></canvas></div>
+    <div class="tile"><canvas id="c2"></canvas></div>
+    <div class="tile"><canvas id="c3"></canvas></div>
+    <div class="tile"><canvas id="c4"></canvas></div>
+  </div>
+
   <div id="controls">
     <button class="btn" onclick="prevScreen()">◀ Anterior</button>
     <button class="btn" onclick="nextScreen()">Próximo ▶</button>
   </div>
-  
+
   <div id="loading">
     <div class="spinner"></div>
-    <div style="font-size: 18px; color: #fff;">Carregando dados...</div>
+    <div style="font-size:18px;color:#fff;">Carregando dados...</div>
   </div>
 
   <script>
@@ -125,200 +160,202 @@
       apiUrl: "https://script.google.com/macros/s/AKfycbzbEO-JpjRMjJSf-xOlIU36EAKITXep3lZa5wzX_gb2DBauRdu8vdUpIknuQk-mF2SM/exec",
       token: "90czL6LPhZ1gHHlaurPZ1xmHpxyOeBqwPYqQWa5Z9bOYddf1kc",
       slideInterval: 35000,
-      autoRefresh: 300000
+      autoRefresh: 300000,
+
+      // >>> ESCOLHA AQUI:
+      // "carousel" = 1 gráfico por vez (igual hoje)
+      // "grid"     = 4 gráficos ao mesmo tempo (tela dividida em 4)
+      view: "carousel"
     };
 
     // ========== VARIÁVEIS GLOBAIS ==========
-    let canvas = document.getElementById('chart');
-    let ctx = canvas.getContext('2d');
+    let mainCanvas = document.getElementById('chart');
+    let mainCtx = mainCanvas.getContext('2d');
+
+    let gridWrap = document.getElementById('gridWrap');
+    let gridCanvases = [
+      document.getElementById('c1'),
+      document.getElementById('c2'),
+      document.getElementById('c3'),
+      document.getElementById('c4')
+    ];
+    let gridCtxs = gridCanvases.map(c => c.getContext('2d'));
+
     let screens = [];
     let currentIndex = 0;
     let allData = [];
+    let slideTimer = null;
+    let refreshTimer = null;
 
-    // ========== FUNÇÕES DE DESENHO ==========
-    function resizeCanvas() {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+    // ========== FUNÇÕES DE DESENHO (AGORA RECEBEM canvas/ctx) ==========
+    function resizeCanvasToElement(canvasEl) {
+      // garante tamanho real do desenho
+      canvasEl.width = canvasEl.clientWidth;
+      canvasEl.height = canvasEl.clientHeight;
     }
 
-    function drawBarChart(labels, values, title, color, suffix = '') {
+    function drawBarChart(ctx, canvas, labels, values, title, color, suffix = '') {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       const padding = 60;
       const chartWidth = canvas.width - padding * 2;
       const chartHeight = canvas.height - padding * 2;
-      const barWidth = chartWidth / labels.length - 10;
-      
-      const maxValue = Math.max(...values.filter(v => v !== null)) || 100;
-      
+      const barWidth = Math.max(8, chartWidth / labels.length - 10);
+
+      const valid = values.filter(v => v !== null && isFinite(v));
+      const maxValue = Math.max(...valid, 1);
+
       // Título
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 24px Arial';
+      ctx.font = 'bold 22px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(title, canvas.width / 2, 30);
-      
-      // Barras
+
       labels.forEach((label, i) => {
         const value = values[i];
-        if (value === null) return;
-        
+        if (value === null || !isFinite(value)) return;
+
         const x = padding + i * (barWidth + 10);
         const barHeight = (value / maxValue) * chartHeight;
         const y = canvas.height - padding - barHeight;
-        
-        // Desenha barra
+
         ctx.fillStyle = color;
         ctx.fillRect(x, y, barWidth, barHeight);
-        
-        // Valor em cima
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(value.toFixed(1) + suffix, x + barWidth / 2, y - 5);
-        
-        // Label embaixo
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '14px Arial';
-        ctx.fillText(label, x + barWidth / 2, canvas.height - padding + 20);
-      });
-    }
 
-    function drawLineChart(labels, values, title, color, suffix = '') {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      const padding = 60;
-      const chartWidth = canvas.width - padding * 2;
-      const chartHeight = canvas.height - padding * 2;
-      
-      const maxValue = Math.max(...values.filter(v => v !== null)) || 100;
-      const minValue = Math.min(...values.filter(v => v !== null)) || 0;
-      const range = maxValue - minValue || 1;
-      
-      // Título
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 24px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(title, canvas.width / 2, 30);
-      
-      // Linha
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      
-      let firstPoint = true;
-      labels.forEach((label, i) => {
-        const value = values[i];
-        if (value === null) return;
-        
-        const x = padding + (i / (labels.length - 1)) * chartWidth;
-        const y = canvas.height - padding - ((value - minValue) / range) * chartHeight;
-        
-        if (firstPoint) {
-          ctx.moveTo(x, y);
-          firstPoint = false;
-        } else {
-          ctx.lineTo(x, y);
-        }
-        
-        // Ponto
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x, y, 5, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Valor
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 14px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(value.toFixed(1) + suffix, x, y - 15);
-        
-        // Label
+        ctx.fillText(value.toFixed(1) + suffix, x + barWidth / 2, y - 6);
+
         ctx.fillStyle = '#94a3b8';
         ctx.font = '12px Arial';
-        ctx.fillText(label, x, canvas.height - padding + 20);
+        ctx.fillText(label, x + barWidth / 2, canvas.height - padding + 18);
       });
-      
-      ctx.stroke();
     }
 
-    function drawStackedBarChart(labels, values1, values2, title, color1, color2, label1, label2) {
+    function drawLineChart(ctx, canvas, labels, values, title, color, suffix = '') {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       const padding = 60;
       const chartWidth = canvas.width - padding * 2;
       const chartHeight = canvas.height - padding * 2;
-      const barWidth = chartWidth / labels.length - 10;
-      
-      const maxValues = [];
-      for (let i = 0; i < labels.length; i++) {
-        const v1 = values1[i] || 0;
-        const v2 = values2[i] || 0;
-        maxValues.push(v1 + v2);
-      }
-      const maxValue = Math.max(...maxValues) || 24;
-      
-      // Título
+
+      const valid = values.filter(v => v !== null && isFinite(v));
+      const maxValue = Math.max(...valid, 1);
+      const minValue = Math.min(...valid, 0);
+      const range = (maxValue - minValue) || 1;
+
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 24px Arial';
+      ctx.font = 'bold 22px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(title, canvas.width / 2, 30);
-      
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+
+      let firstPoint = true;
+      const n = labels.length;
+
+      for (let i = 0; i < n; i++) {
+        const value = values[i];
+        if (value === null || !isFinite(value)) continue;
+
+        const x = padding + (i / Math.max(1, n - 1)) * chartWidth;
+        const y = canvas.height - padding - ((value - minValue) / range) * chartHeight;
+
+        if (firstPoint) { ctx.moveTo(x, y); firstPoint = false; }
+        else ctx.lineTo(x, y);
+
+        // ponto
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // valor
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(value.toFixed(1) + suffix, x, y - 12);
+
+        // label
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px Arial';
+        ctx.fillText(labels[i], x, canvas.height - padding + 18);
+      }
+
+      ctx.stroke();
+    }
+
+    function drawStackedBarChart(ctx, canvas, labels, values1, values2, title, color1, color2, label1, label2) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const padding = 60;
+      const chartWidth = canvas.width - padding * 2;
+      const chartHeight = canvas.height - padding * 2;
+      const barWidth = Math.max(8, chartWidth / labels.length - 10);
+
+      const maxValues = labels.map((_, i) => (values1[i] || 0) + (values2[i] || 0));
+      const maxValue = Math.max(...maxValues, 1);
+
+      // Título
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 22px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(title, canvas.width / 2, 30);
+
       // Legenda
-      ctx.font = '16px Arial';
-      const legendY = 50;
+      ctx.font = '14px Arial';
+      const legendY = 48;
+
       ctx.fillStyle = color1;
-      ctx.fillRect(canvas.width / 2 - 150, legendY, 20, 20);
+      ctx.fillRect(canvas.width / 2 - 150, legendY, 18, 18);
       ctx.fillStyle = '#fff';
       ctx.textAlign = 'left';
-      ctx.fillText(label1, canvas.width / 2 - 125, legendY + 15);
-      
+      ctx.fillText(label1, canvas.width / 2 - 125, legendY + 14);
+
       ctx.fillStyle = color2;
-      ctx.fillRect(canvas.width / 2 + 20, legendY, 20, 20);
+      ctx.fillRect(canvas.width / 2 + 20, legendY, 18, 18);
       ctx.fillStyle = '#fff';
-      ctx.fillText(label2, canvas.width / 2 + 45, legendY + 15);
-      
-      // Barras empilhadas
+      ctx.fillText(label2, canvas.width / 2 + 45, legendY + 14);
+
       labels.forEach((label, i) => {
         const val1 = values1[i] || 0;
         const val2 = values2[i] || 0;
-        
+
         const x = padding + i * (barWidth + 10);
-        
-        // Barra 1 (funcionando - embaixo)
+
         const height1 = (val1 / maxValue) * chartHeight;
         const y1 = canvas.height - padding - height1;
-        
+
         ctx.fillStyle = color1;
         ctx.fillRect(x, y1, barWidth, height1);
-        
-        // Valor dentro da barra 1
-        if (height1 > 25) {
+
+        if (height1 > 22) {
           ctx.fillStyle = '#fff';
-          ctx.font = 'bold 14px Arial';
+          ctx.font = 'bold 12px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText(val1.toFixed(1) + 'h', x + barWidth / 2, y1 + height1 / 2 + 5);
+          ctx.fillText(val1.toFixed(1) + 'h', x + barWidth / 2, y1 + height1 / 2 + 4);
         }
-        
-        // Barra 2 (parado - em cima)
+
         const height2 = (val2 / maxValue) * chartHeight;
         const y2 = y1 - height2;
-        
+
         ctx.fillStyle = color2;
         ctx.fillRect(x, y2, barWidth, height2);
-        
-        // Valor dentro da barra 2
-        if (height2 > 25) {
+
+        if (height2 > 22) {
           ctx.fillStyle = '#fff';
-          ctx.font = 'bold 14px Arial';
+          ctx.font = 'bold 12px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText(val2.toFixed(1) + 'h', x + barWidth / 2, y2 + height2 / 2 + 5);
+          ctx.fillText(val2.toFixed(1) + 'h', x + barWidth / 2, y2 + height2 / 2 + 4);
         }
-        
-        // Label embaixo
+
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '14px Arial';
+        ctx.font = '12px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(label, x + barWidth / 2, canvas.height - padding + 20);
+        ctx.fillText(label, x + barWidth / 2, canvas.height - padding + 18);
       });
     }
 
@@ -336,24 +373,35 @@
     function parseData(json) {
       const headers = json.headers || [];
       const rows = json.rows || [];
-      
       const result = [];
-      
+
       rows.forEach(row => {
         const obj = {};
-        headers.forEach((h, i) => {
-          obj[h] = row[i];
-        });
-        
+        headers.forEach((h, i) => obj[h] = row[i]);
+
+        const util = parseFloat(String(obj['Utilização de Maquina'] || '0').replace('%', '').replace(',', '.'));
+        const pecas = parseFloat(String(obj['Peças Fabric.'] || '0').replace(/\./g,'').replace(',', '.'));
+
+        const funcionando = parseHMS(obj['Funcionando']);
+        const parado = parseHMS(obj['Parado']);
+
+        // NOVO: peças por hora rodando (produtividade real)
+        // Se rodou muito pouco (funcionando ~ 0), evita divisão.
+        let pph = null;
+        if (isFinite(pecas) && funcionando > 0.05) { // 3 min
+          pph = pecas / funcionando;
+        }
+
         result.push({
-          label: obj.data ? obj.data.substring(0, 5) : '',
-          util: parseFloat(String(obj['Utilização de Maquina'] || '0').replace('%', '').replace(',', '.')) || null,
-          pecas: parseFloat(String(obj['Peças Fabric.'] || '0').replace('.', '').replace(',', '.')) || null,
-          funcionando: parseHMS(obj['Funcionando']),
-          parado: parseHMS(obj['Parado'])
+          label: obj.data ? String(obj.data).substring(0, 5) : '',
+          util: isFinite(util) ? util : null,
+          pecas: isFinite(pecas) ? pecas : null,
+          funcionando,
+          parado,
+          pph
         });
       });
-      
+
       return result;
     }
 
@@ -363,101 +411,158 @@
       const pecasData = data.map(d => d.pecas);
       const funcionandoData = data.map(d => d.funcionando);
       const paradoData = data.map(d => d.parado);
-      
+
+      // NOVO: produtividade (peças por hora rodando)
+      const pphData = data.map(d => d.pph);
+
       return [
         {
           title: 'Utilização de Máquina',
-          draw: () => drawLineChart(labels, utilData, 'Utilização de Máquina (%)', '#3b82f6', '%')
+          draw: (ctx, canvas) => drawLineChart(ctx, canvas, labels, utilData, 'Utilização de Máquina (%)', '#3b82f6', '%')
         },
         {
           title: 'Produção Diária',
-          draw: () => drawBarChart(labels, pecasData, 'Peças Fabricadas', '#22c55e', '')
+          draw: (ctx, canvas) => drawBarChart(ctx, canvas, labels, pecasData, 'Peças Fabricadas', '#22c55e', '')
         },
         {
-          title: 'Horas de Funcionamento / Parado',
-          draw: () => drawStackedBarChart(labels, funcionandoData, paradoData, 'Horas de Funcionamento / Parado', '#22c55e', '#ef4444', 'Funcionando', 'Parado')
+          title: 'Horas Funcionando / Parado',
+          draw: (ctx, canvas) => drawStackedBarChart(ctx, canvas, labels, funcionandoData, paradoData, 'Horas de Funcionamento / Parado', '#22c55e', '#ef4444', 'Funcionando', 'Parado')
+        },
+        {
+          // 4º GRÁFICO (novo)
+          title: 'Produtividade',
+          draw: (ctx, canvas) => drawLineChart(ctx, canvas, labels, pphData, 'Produtividade (Peças por Hora Rodando)', '#f59e0b', '')
         }
       ];
     }
 
-    // ========== NAVEGAÇÃO ==========
+    // ========== NAVEGAÇÃO (CARROSSEL) ==========
     function showScreen(index) {
       if (screens.length === 0) return;
-      
+
       currentIndex = index;
       const screen = screens[currentIndex];
-      
+
       document.getElementById('title').textContent = screen.title;
-      document.getElementById('status').textContent = `Tela ${currentIndex + 1} de ${screens.length}`;
-      
-      resizeCanvas();
-      screen.draw();
+      document.getElementById('status').textContent = Tela ${currentIndex + 1} de ${screens.length};
+
+      resizeCanvasToElement(mainCanvas);
+      screen.draw(mainCtx, mainCanvas);
     }
 
     function nextScreen() {
+      if (CONFIG.view !== "carousel") return;
       currentIndex = (currentIndex + 1) % screens.length;
       showScreen(currentIndex);
     }
 
     function prevScreen() {
+      if (CONFIG.view !== "carousel") return;
       currentIndex = (currentIndex - 1 + screens.length) % screens.length;
       showScreen(currentIndex);
+    }
+
+    // ========== MODO GRADE (4 gráficos juntos) ==========
+    function drawGrid() {
+      // header mantém um título geral
+      document.getElementById('title').textContent = 'Resumo (4 Gráficos)';
+      document.getElementById('status').textContent = Atualizado • ${new Date().toLocaleTimeString('pt-BR')};
+
+      for (let i = 0; i < 4; i++) {
+        const c = gridCanvases[i];
+        const ctx = gridCtxs[i];
+        resizeCanvasToElement(c);
+        // desenha o screen i no tile i
+        screens[i].draw(ctx, c);
+      }
+    }
+
+    function applyViewMode() {
+      const controls = document.getElementById('controls');
+
+      if (CONFIG.view === "grid") {
+        mainCanvas.classList.add('hidden');
+        controls.classList.add('hidden');
+        gridWrap.style.display = "grid";
+      } else {
+        gridWrap.style.display = "none";
+        controls.classList.remove('hidden');
+        mainCanvas.classList.remove('hidden');
+      }
     }
 
     // ========== CARREGAMENTO ==========
     async function loadData() {
       try {
-        const url = `${CONFIG.apiUrl}?token=${CONFIG.token}&_=${Date.now()}`;
+        const url = ${CONFIG.apiUrl}?token=${CONFIG.token}&_=${Date.now()};
         const response = await fetch(url);
         const json = await response.json();
-        
+
         allData = parseData(json);
         screens = createScreens(allData);
-        
+
         document.getElementById('loading').classList.add('hidden');
-        showScreen(0);
-        
-        // Auto-avançar
-        setInterval(nextScreen, CONFIG.slideInterval);
-        
-        // Auto-refresh
-        setInterval(loadData, CONFIG.autoRefresh);
-        
+
+        // desenha conforme o modo
+        if (CONFIG.view === "grid") {
+          drawGrid();
+        } else {
+          showScreen(currentIndex || 0);
+        }
+
       } catch (error) {
-        document.getElementById('loading').innerHTML = 
-          '<div style="color:#ef4444; font-size:18px;">Erro ao carregar dados<br><small>' + 
-          error.message + '</small></div>';
+        document.getElementById('loading').innerHTML =
+          '<div style="color:#ef4444; font-size:18px;">Erro ao carregar dados<br><small>' +
+          (error && error.message ? error.message : String(error)) +
+          '</small></div>';
       }
+    }
+
+    function startTimers() {
+      // limpa timers se já existirem (evita duplicar)
+      if (slideTimer) clearInterval(slideTimer);
+      if (refreshTimer) clearInterval(refreshTimer);
+
+      if (CONFIG.view === "carousel") {
+        slideTimer = setInterval(nextScreen, CONFIG.slideInterval);
+      }
+
+      refreshTimer = setInterval(async () => {
+        await loadData();
+      }, CONFIG.autoRefresh);
     }
 
     // ========== INICIALIZAÇÃO ==========
     window.addEventListener('resize', () => {
-      if (screens.length > 0) {
-        showScreen(currentIndex);
-      }
+      if (!screens.length) return;
+
+      if (CONFIG.view === "grid") drawGrid();
+      else showScreen(currentIndex);
     });
 
-    // Suporte a toque (swipe)
+    // Suporte a toque (swipe) - só no modo carousel
     let touchStartX = 0;
-    canvas.addEventListener('touchstart', (e) => {
+    mainCanvas.addEventListener('touchstart', (e) => {
+      if (CONFIG.view !== "carousel") return;
       touchStartX = e.touches[0].clientX;
     });
-    
-    canvas.addEventListener('touchend', (e) => {
+
+    mainCanvas.addEventListener('touchend', (e) => {
+      if (CONFIG.view !== "carousel") return;
       const touchEndX = e.changedTouches[0].clientX;
       const diff = touchStartX - touchEndX;
-      
+
       if (Math.abs(diff) > 50) {
         if (diff > 0) nextScreen();
         else prevScreen();
       }
     });
 
-    // Inicia
-    resizeCanvas();
+    // Start
+    applyViewMode();
+    resizeCanvasToElement(mainCanvas);
     loadData();
+    startTimers();
   </script>
 </body>
 </html>
-
-
