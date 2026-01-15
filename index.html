@@ -451,12 +451,12 @@
               }
             }
             
-            // Parse de utilização
-            let utilStr = String(obj['Utilização de Maquina'] || '0');
+            // Parse de utilização (com letra minúscula!)
+            let utilStr = String(obj['utilização de Maquina'] || '0');
             utilStr = utilStr.replace('%', '').replace(',', '.');
             const util = parseFloat(utilStr);
             
-            console.log('Linha', idx, '- Utilização original:', obj['Utilização de Maquina'], '→ Processado:', util);
+            console.log('Linha', idx, '- Utilização original:', obj['utilização de Maquina'], '→ Processado:', util);
             
             result.push({
               label: obj.data ? obj.data.substring(0, 5) : '',
